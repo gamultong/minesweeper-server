@@ -11,7 +11,7 @@ class Point:
     x: int
     y: int
 
-SECTION_LENGTH = 100
+SECTION_LENGTH = 4
 
 class Section:
     def __init__(self, p:Point, data):
@@ -68,21 +68,31 @@ class Section:
     
     def fetch(self, start:Point, end:Point|None = None) -> list[bytearray]|bytes:
         if end:
-            return self[start.y:end.y+1][start.x:end.x+1]
+            data = self[end.y:start.y+1][start.x:end.x+1]
+            data.reverse()
         else:
-            return bytes([self[start.y][start.x]])
-    
+            data = bytes([self[start.y][start.x]])
+        return data
+
     def update(self, data, start:Point, end:Point|None = None) -> None:
+        data = list(reversed(data))
         if end:
-            self[start.y:end.y+1][start.x:end.x+1] = data
+            self[end.y:start.y+1][start.x:end.x+1] = data
         else:
             self[start.y][start.x] = data[0]
-        return
         
+
+    @property
+    def abs_x(self):
+        return self.p.x * SECTION_LENGTH
+
+    @property
+    def abs_y(self):
+        return self.p.y * SECTION_LENGTH
 
     @staticmethod
     def from_str(p:Point, data):
-        arr = [bytearray(data[i*SECTION_LENGTH:(i*SECTION_LENGTH)+SECTION_LENGTH], "ascii") for i in range(SECTION_LENGTH)]
+        arr = [bytearray(data[i*SECTION_LENGTH:(i*SECTION_LENGTH)+SECTION_LENGTH], "ascii") for i in range(SECTION_LENGTH-1, -1, -1)]
         return Section(p, arr)
     
 

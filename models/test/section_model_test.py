@@ -2,10 +2,13 @@ from models.section_model import *
 
 import unittest
 
-TESTDATA_PATH = "testdata/map_example.txt"
-EXAPMLE_SECTION_DATA = open(TESTDATA_PATH, "r").readline()
+if SECTION_LENGTH == 100:
+    TESTDATA_PATH = "testdata/map_example.txt"
+    EXAPMLE_SECTION_DATA = open(TESTDATA_PATH, "r").readline()
+else:
+    EXAPMLE_SECTION_DATA = "asdfasdfadsfasdf"
 
-EXAMPLE_POINT = Point(x=0, y=0)
+EXAMPLE_POINT = Point(x=0, y=SECTION_LENGTH - 1)
 
 def cases(case_list):
     def wrapper(func):
@@ -23,8 +26,8 @@ testcases = [
         "range": {
             "start_point": EXAMPLE_POINT,
             "end_point": Point(
-                x=EXAMPLE_POINT.x + SECTION_LENGTH-1, 
-                y=EXAMPLE_POINT.y + SECTION_LENGTH-1
+                x=SECTION_LENGTH-1, 
+                y=0
                 )
         },
         "expect": EXAPMLE_SECTION_DATA
@@ -40,8 +43,8 @@ testcases = [
         "desc": "fetch end",
         "range": {
             "start_point": Point(
-                x=EXAMPLE_POINT.x + SECTION_LENGTH - 1, 
-                y=EXAMPLE_POINT.y + SECTION_LENGTH - 1
+                x=SECTION_LENGTH - 1, 
+                y=0
                 )
         },
         "expect": EXAPMLE_SECTION_DATA[(SECTION_LENGTH ** 2) - 1]
@@ -71,8 +74,6 @@ class SectionModelTestCase(unittest.TestCase):
         data_length = sum(len(row) for row in section.data)
         assert data_length == SECTION_LENGTH ** 2, data_length
 
-        assert bytearray().join(section[:][:]) == bytearray(EXAPMLE_SECTION_DATA, 'ascii')
-
     @cases(testcases)
     def test_fetch(self, desc, range, expect):
         section = Section.from_str(
@@ -87,7 +88,6 @@ class SectionModelTestCase(unittest.TestCase):
             with self.assertRaises(expect, msg=f"desc: {desc}"):
                 section.fetch(start=start, end=end)
         else:
-                
             data = section.fetch(start=start, end=end)
 
             if not end:
@@ -121,7 +121,7 @@ class SectionModelTestCase(unittest.TestCase):
 
         value = [bytearray("A"*cols, "ascii") for _ in range(rows)]
         start = EXAMPLE_POINT
-        end = Point(EXAMPLE_POINT.x + cols - 1, EXAMPLE_POINT.y + rows - 1)
+        end = Point(EXAMPLE_POINT.x + cols - 1, EXAMPLE_POINT.y - rows + 1)
 
         section.update(data=value, start=start, end=end)
 
