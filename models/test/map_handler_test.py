@@ -48,4 +48,5 @@ class MapHandlerTestCase(unittest.TestCase):
 
         assert data == expect, f"{data} {expect}"     
 
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()

@@ -1,4 +1,4 @@
-from message_object import *
+from models.message_object import *
 import unittest
 import json
 
@@ -87,7 +87,5 @@ class TilesDataTestCase(unittest.TestCase):
 
         assert json.loads(msg_str) == json.loads(TILES_EXAMPLE)
            
-    
-    
-
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()
