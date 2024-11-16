@@ -1,5 +1,6 @@
 from typing import TypeVar, Generic
 from dataclasses import dataclass
+from models.section_model import Point
 import json
 
 class InvalidDataException(BaseException):
@@ -32,6 +33,13 @@ class FetchTilesData(MessageData):
     end_x:int
     end_y:int
 
+    @property
+    def start_p(self):
+        return Point(self.start_x, self.start_y)
+    @property
+    def end_p(self):
+        return Point(self.end_x, self.end_y)
+
 @dataclass
 class TilesData(MessageData):
     event = "tiles"
@@ -41,6 +49,13 @@ class TilesData(MessageData):
     end_y:int
     tiles:str
 
+    @property
+    def start_p(self):
+        return Point(self.start_x, self.start_y)
+    @property
+    def end_p(self):
+        return Point(self.end_x, self.end_y)
+    
 MESSAGE_DATA = TypeVar("message_data", bound=[FetchTilesData, TilesData])
 
 class Message(Generic[MESSAGE_DATA]):
