@@ -1,19 +1,8 @@
-from enum import Enum
-from dataclasses import dataclass
+from .point import Point
 
-class TileState(Enum):
-    OPEN = ord('O')
-    CLOSED = ord('C')
-    MINE = ord('M')
-
-@dataclass
-class Point:
-    x: int
-    y: int
-
-SECTION_LENGTH = 4
 
 class Section:
+    LENGTH = 100
     def __init__(self, p:Point, data):
         self.p = p
         self.data = data
@@ -24,8 +13,11 @@ class Section:
         if type(slc) == int:
             return self.data[slc]
         
-        start_y = slc.start if slc.start else 0
-        end_y = slc.stop if slc.stop else SECTION_LENGTH
+        start_y = slc.start if slc.start != None else 0
+        end_y = slc.stop if slc.stop != None else Section.LENGTH
+
+        start_y = to_inner_index(start_y)
+        end_y = to_inner_index(end_y)
 
         class wrapper:
             def __getitem__(wp_self, *args):
@@ -34,9 +26,9 @@ class Section:
                     wp_slc = slice(wp_slc, wp_slc+1, None)
 
                 start_x = wp_slc.start if wp_slc.start else 0
-                end_x = wp_slc.stop if wp_slc.stop else SECTION_LENGTH
+                end_x = wp_slc.stop if wp_slc.stop else Section.LENGTH
                 
-                result = [self.data[i][start_x:end_x] for i in range(start_y, end_y)]
+                result = [self.data[i][start_x:end_x] for i in range(start_y, end_y+1)]
 
                 return result
             
@@ -47,8 +39,8 @@ class Section:
                     wp_slc = slice(wp_slc, wp_slc+1, None)
 
                 start_x = wp_slc.start if wp_slc.start else 0
-                end_x = wp_slc.stop if wp_slc.stop else SECTION_LENGTH
-                for y in range(start_y, end_y):
+                end_x = wp_slc.stop if wp_slc.stop else Section.LENGTH
+                for y in range(start_y, end_y+1):
                     self.data[y] = self.data[y][:start_x] + wp_data[y-start_y] + self.data[y][end_x:]
                 return 
         
@@ -60,7 +52,7 @@ class Section:
         if type(slc) == int:
             if type(data) != bytearray:
                 raise
-            if len(data) != SECTION_LENGTH:
+            if len(data) != Section.LENGTH:
                 raise
             self.data[slc] = data
             return
@@ -68,31 +60,29 @@ class Section:
     
     def fetch(self, start:Point, end:Point|None = None) -> list[bytearray]|bytes:
         if end:
-            data = self[end.y:start.y+1][start.x:end.x+1]
-            data.reverse()
+            data = self[start.y:end.y][start.x:end.x+1]
         else:
             data = bytes([self[start.y][start.x]])
         return data
 
     def update(self, data, start:Point, end:Point|None = None) -> None:
-        data = list(reversed(data))
         if end:
-            self[end.y:start.y+1][start.x:end.x+1] = data
+            self[start.y:end.y][start.x:end.x+1] = data
         else:
             self[start.y][start.x] = data[0]
         
-
     @property
     def abs_x(self):
-        return self.p.x * SECTION_LENGTH
+        return self.p.x * Section.LENGTH
 
     @property
     def abs_y(self):
-        return self.p.y * SECTION_LENGTH
+        return self.p.y * Section.LENGTH
 
     @staticmethod
     def from_str(p:Point, data):
-        arr = [bytearray(data[i*SECTION_LENGTH:(i*SECTION_LENGTH)+SECTION_LENGTH], "ascii") for i in range(SECTION_LENGTH-1, -1, -1)]
+        arr = [bytearray(data[i*Section.LENGTH:(i*Section.LENGTH)+Section.LENGTH], "ascii") for i in range(Section.LENGTH)]
         return Section(p, arr)
-    
 
+def to_inner_index(y):
+    return Section.LENGTH - 1 - y
