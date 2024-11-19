@@ -1,4 +1,4 @@
-from .event_broker_test import EventPublisherTestCase
+from .event_broker_test import EventBrokerTestCase
 
 import unittest
 
