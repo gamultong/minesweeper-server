@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Response
 from conn.manager import ConnectionManager
 from board.handler import BoardHandler
 
@@ -15,6 +15,10 @@ async def session(ws: WebSocket):
         except Exception as e:
             print(f"WebSocket connection closed: {e}")
             break
+
+@app.get("/")
+def health_check():
+    return Response()
 
 if __name__ == "__main__":
     import uvicorn
