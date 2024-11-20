@@ -45,7 +45,6 @@ class Board:
                 )
                 
                 fetched = section.fetch(start=start_p, end=end_p)
-                print(start_p, end_p, fetched)
                 
                 for y in range(len(fetched)):
                     out[offset+y] += fetched[y]

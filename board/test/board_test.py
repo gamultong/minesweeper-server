@@ -40,11 +40,7 @@ class BoardTestCase(unittest.TestCase):
     def test_fetch(self, data, expect):
         start_p = data["start_p"]
         end_p = data["end_p"]
-
-        # print([[Board.sections[y][x].data for x in Board.sections[y]] for y in Board.sections])
-
-        # Board._debug()
-
+        
         data = Board.fetch(start_p, end_p)
 
         assert data == expect, f"{data} {expect}"     

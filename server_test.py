@@ -34,8 +34,6 @@ def test_fetch_tiles():
 
         response = websocket.receive_text()
         
-        print(response)
-
         assert response == expect.to_str()
 
 test_fetch_tiles()

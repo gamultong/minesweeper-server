@@ -16,6 +16,8 @@ async def session(ws: WebSocket):
             print(f"WebSocket connection closed: {e}")
             break
 
+    await ConnectionManager.close(conn)
+
 @app.get("/")
 def health_check():
     return Response()

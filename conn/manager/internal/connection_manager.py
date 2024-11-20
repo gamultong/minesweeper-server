@@ -23,6 +23,10 @@ class ConnectionManager:
         ConnectionManager.conns[id] = conn_obj
 
         return conn_obj
+    
+    @staticmethod
+    async def close(conn: Conn) -> Conn:
+        ConnectionManager.conns.pop(conn.id)
 
     @staticmethod
     def generate_conn_id():

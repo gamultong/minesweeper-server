@@ -25,14 +25,15 @@ class Receiver(Generic[EVENT_TYPE]):
         del Receiver.receiver_dict[self.id]
         return True
 
+    async def __call__(self, msg:Message[EVENT_TYPE]):
+        return await self.func(msg)
+
     @staticmethod
     def get_receiver(id: str) -> Receiver|None:
         if id not in Receiver.receiver_dict:
             return None
         return Receiver.receiver_dict[id]
     
-    async def __call__(self, msg:Message[EVENT_TYPE]):
-        return await self.func(msg)
 
 class EventBroker: 
     event_dict: dict[str, list[str]] = {}
