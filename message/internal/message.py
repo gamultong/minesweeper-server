@@ -9,6 +9,10 @@ EVENT_TYPE = TypeVar(\
     bound=Payload
 )
 
+PAYLOAD_DICT:dict[str, Payload] = {
+    "fetch-tiles": FetchTilesPayload,
+    "tiles": TilesPayload
+}
 class Message(Generic[EVENT_TYPE]):
     def __init__(self, event:str, payload:EVENT_TYPE):
         self.event = event
@@ -30,17 +34,10 @@ class Message(Generic[EVENT_TYPE]):
 
         return Message(event=event, payload=payload)
 
-
-PAYLOAD_DICT:dict[str, Payload] = {
-    "fetch-tiles": FetchTilesPayload,
-    "tiles": TilesPayload
-}
-
 def decode_data(event: str, data: dict):
     """
     data를 Payload로 decode
     """
-    
     if not event in PAYLOAD_DICT:
         raise InvalidEventTypeException(event)
     

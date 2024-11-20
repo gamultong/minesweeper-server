@@ -1,15 +1,15 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 from message import Message
 from event import EventBroker, Receiver, NoMatchingReceiverException
 
-class EventBrokerTestCase(unittest.TestCase):
+class EventBrokerTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.handler = MagicMock()
-        self.func_receive_a = MagicMock()
-        self.func_receive_b = MagicMock()
+        self.func_receive_a = AsyncMock()
+        self.func_receive_b = AsyncMock()
         
         self.func_receive_a = EventBroker.add_receiver("example_a")(self.func_receive_a)
         self.func_receive_b = EventBroker.add_receiver("example_b")(self.handler.receive_b)
@@ -36,21 +36,21 @@ class EventBrokerTestCase(unittest.TestCase):
         assert self.handler.receive_a.id not in Receiver.receiver_dict
         assert "example_a" not in EventBroker.event_dict
         
-    def test_publish(self):
+    async def test_publish(self):
         message = Message(event="example_a", payload=None)
         
-        EventBroker.publish(message=message)
+        await EventBroker.publish(message=message)
 
         assert len(self.handler.receive_a.func.mock_calls) == 1
         mock_message = self.handler.receive_a.func.mock_calls[0].args[0]               
         assert mock_message.event == message.event
         assert mock_message.payload == message.payload
 
-    def test_publish_no_receiver(self):
+    async def test_publish_no_receiver(self):
         message = Message(event="invaild_event", payload=None)
 
         with self.assertRaises(NoMatchingReceiverException) as cm:
-            EventBroker.publish(message=message)
+            await EventBroker.publish(message=message)
         self.assertEqual(cm.exception.msg, "no matching receiver for 'invaild_event'")
 
 if __name__ == "__main__":

@@ -70,7 +70,18 @@ class Section:
             self[start.y:end.y][start.x:end.x+1] = data
         else:
             self[start.y][start.x] = data[0]
-        
+
+    def _debug(self):
+        print("---------------------------------")
+        print("section lenght  :", Section.LENGTH)
+        print("section point x :", self.abs_x)
+        print("              y :", self.abs_y)
+        print("section data    :")
+        print("---------------------------------")
+        for i in range(Section.LENGTH):
+            print(self.data[i])
+        print("---------------------------------")
+
     @property
     def abs_x(self):
         return self.p.x * Section.LENGTH
@@ -83,6 +94,7 @@ class Section:
     def from_str(p:Point, data):
         arr = [bytearray(data[i*Section.LENGTH:(i*Section.LENGTH)+Section.LENGTH], "ascii") for i in range(Section.LENGTH)]
         return Section(p, arr)
+
 
 def to_inner_index(y):
     return Section.LENGTH - 1 - y

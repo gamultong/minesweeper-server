@@ -1,0 +1,5 @@
+1. FastAPI 서버 구현 및 API 명세 구현
+2. 테스트의 모든 assert 문 self.assertXXX로 바꾸기
+3. 보드 핸들러 만들기
+4. Reciver 파일 분리 & Test
+5. circular dependency 해결

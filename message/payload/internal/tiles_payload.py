@@ -1,6 +1,10 @@
 from board import Point
 from dataclasses import dataclass
 from .base_payload import Payload
+from enum import Enum
+class TilesEvent(str, Enum):
+    FETCH_TILES = "fetch-tiles"
+    TILES = "tiles"
 
 @dataclass
 class FetchTilesPayload(Payload):

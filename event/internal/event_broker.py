@@ -31,8 +31,8 @@ class Receiver(Generic[EVENT_TYPE]):
             return None
         return Receiver.receiver_dict[id]
     
-    def __call__(self, msg:Message[EVENT_TYPE]):
-        return self.func(msg)
+    async def __call__(self, msg:Message[EVENT_TYPE]):
+        return await self.func(msg)
 
 class EventBroker: 
     event_dict: dict[str, list[str]] = {}
@@ -61,13 +61,12 @@ class EventBroker:
             del EventBroker.event_dict[receiver.event]
 
     @staticmethod
-    def publish(message: Message):
+    async def publish(message: Message):
         if message.event not in EventBroker.event_dict:
             raise NoMatchingReceiverException(message.event)
 
         receiver_ids = EventBroker.event_dict[message.event]
         for id in receiver_ids:
             receiver = Receiver.get_receiver(id)
-            receiver(message)
-
+            await receiver(message)
         

@@ -1,32 +1,17 @@
-from fastapi.websockets import WebSocket
-from dataclasses import dataclass
-from uuid import uuid4
+from fastapi import FastAPI, WebSocket
+from conn.manager import ConnectionManager
+from board.handler import BoardHandler
 
-@dataclass
-class Conn:
-    id: str
-    conn: WebSocket
+app = FastAPI()
 
-class ConnectionManager:
-    conns: dict[str, Conn] = {}
-
-    @staticmethod
-    def get_conn(id:str):
-        if id in ConnectionManager.conns:
-            return ConnectionManager.conns[id]
-        return None
+@app.websocket("/session")
+async def session(ws: WebSocket):
+    conn = await ConnectionManager.add(ws)
     
-    @staticmethod
-    def add(conn: WebSocket):
-        id = ConnectionManager.generate_conn_id()
-
-        conn_obj = Conn(id=id, conn=conn)
-        ConnectionManager.conns[id] = conn_obj
-
-        return conn_obj
-
-    @staticmethod
-    def generate_conn_id():
-        while (id:=uuid4().hex) in ConnectionManager.conns:
-            pass
-        return id
+    while True:
+        try:
+            msg = await conn.receive()
+            await ConnectionManager.handle_message(msg)
+        except Exception as e:
+            print(f"WebSocket connection closed: {e}")
+            break
