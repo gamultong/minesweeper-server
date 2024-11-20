@@ -15,3 +15,7 @@ async def session(ws: WebSocket):
         except Exception as e:
             print(f"WebSocket connection closed: {e}")
             break
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

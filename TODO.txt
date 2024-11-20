@@ -1,5 +1,6 @@
-1. FastAPI 서버 구현 및 API 명세 구현
-2. 테스트의 모든 assert 문 self.assertXXX로 바꾸기
-3. 보드 핸들러 만들기
-4. Reciver 파일 분리 & Test
-5. circular dependency 해결
+1. 테스트의 모든 assert 문 self.assertXXX로 바꾸기
+2. Reciver 파일 분리 & Test
+3. 생산성 증가
+    - ci / cd 파이프라인 만들기 (GitHub Actions)
+    - test 좀 더 좋은 방식으로 모으기?
+    - 개발 환경 config 같은거 만들기 (나를 위해)
