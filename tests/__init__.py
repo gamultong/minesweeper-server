@@ -15,5 +15,8 @@ from board.handler.test import *
 from conn.test import *
 from conn.manager.test import *
 
+#cursor
+from cursor.test import *
+
 if __name__ == "__main__":
     unittest.main()
