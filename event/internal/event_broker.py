@@ -10,7 +10,7 @@ class Receiver(Generic[EVENT_TYPE]):
 
     def __init__(self, func, event):
         self.func:Callable[[Message[EVENT_TYPE]], None] = func
-        self.event:str = event
+        self.events:list[str] = [event]
         self.id:str = self.__get_uuid()
         Receiver.receiver_dict[self.id] = self
 
@@ -40,10 +40,15 @@ class EventBroker:
 
     @staticmethod
     def add_receiver(event: str):
-        def wrapper(func: Callable):
-            receiver = Receiver(func, event)
-            if event not in EventBroker.event_dict:
-                EventBroker.event_dict[event] = []
+        if event not in EventBroker.event_dict:
+            EventBroker.event_dict[event] = []
+        
+        def wrapper(func: Callable|Receiver):
+            if type(func) == Receiver:
+                func.events.append(event)
+                receiver = func
+            else:
+                receiver = Receiver(func, event)
 
             EventBroker.event_dict[event].append(receiver.id)
 
@@ -55,11 +60,12 @@ class EventBroker:
         if not (removed := receiver.remove()):
             return
 
-        receivers = EventBroker.event_dict[receiver.event]
-        receivers.remove(receiver.id)
+        for event in receiver.events:
+            receivers = EventBroker.event_dict[event]
+            receivers.remove(receiver.id)
 
-        if len(EventBroker.event_dict[receiver.event]) == 0:
-            del EventBroker.event_dict[receiver.event]
+            if len(EventBroker.event_dict[event]) == 0:
+                del EventBroker.event_dict[event]
 
     @staticmethod
     async def publish(message: Message):
