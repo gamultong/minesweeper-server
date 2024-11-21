@@ -33,8 +33,10 @@ jobs:
     needs: build-and-push-image
     runs-on: ubuntu-latest
     steps:
-    #   - name: checkout
-    #     uses: actions/checkout@master
+      - name: checkout
+        uses: actions/checkout@master
+        with:
+          sparse-checkout: config/scripts/deploy.sh 
 
     #   - name: create env file
     #     run: |
@@ -49,14 +51,14 @@ jobs:
     #       script: mkdir -p /home/ubuntu/srv/ubuntu
 
     # 이거 고쳐야함 코드 개이상함 (by 김원욱)
-      - name: copy source via ssh key
-        uses: burnett01/rsync-deployments@4.1
-        with:
-          switches: -avzr --delete
-          remote_path: /home/ubuntu/srv/ubuntu/
-          remote_host: ${{ secrets.HOST }}
-          remote_user: ubuntu
-          remote_key: ${{ secrets.KEY }}
+      # - name: copy source via ssh key
+      #   uses: burnett01/rsync-deployments@4.1
+      #   with:
+      #     switches: -avzr --delete
+      #     remote_path: /home/ubuntu/srv/ubuntu/
+      #     remote_host: ${{ secrets.HOST }}
+      #     remote_user: ubuntu
+      #     remote_key: ${{ secrets.KEY }}
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@master
@@ -64,5 +66,4 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.KEY }}
-          script: |
-            sh /home/ubuntu/srv/ubuntu/confing/scripts/deploy.sh
+          script_path: config/scripts/deploy.sh 
