@@ -29,7 +29,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPONAME }}
 
   deploy:
-    name: Deploy
+    name: deploy
     needs: build-and-push-image
     runs-on: ubuntu-latest
     steps:
