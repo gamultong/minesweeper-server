@@ -26,6 +26,7 @@ fi
 
 # echo "start docker-compose up: ubuntu"
 # sudo docker-compose -f /home/ubuntu/srv/ubuntu/docker-compose.yaml down
+sudo docker rm -f minesweeper
 sudo docker rmi dojini/minesweeper:latest
 # sudo docker-compose -f /home/ubuntu/srv/ubuntu/docker-compose.yaml up --build -d 
-sudo docker run dojini/minesweeper:latest
+sudo docker run -it -d -p 80:8000 --name minesweeper dojini/minesweeper:latest
