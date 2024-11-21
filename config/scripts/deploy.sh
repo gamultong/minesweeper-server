@@ -30,14 +30,14 @@ fi
 CONTAINER_NAME="minesweeper"
 
 # 컨테이너가 존재하는지 확인
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"
+if sudo docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"
 then
   sudo docker rm -f $CONTAINER_NAME
 fi 
 
 IMAGE_NAME="dojini/minesweeper:latest"
 
-if docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${IMAGE_NAME}$"
+if sudo docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${IMAGE_NAME}$"
 then
   sudo docker rmi $IMAGE_NAME
 fi
