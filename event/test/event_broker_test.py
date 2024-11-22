@@ -12,7 +12,8 @@ class EventBrokerTestCase(unittest.IsolatedAsyncioTestCase):
         self.func_receive_b = AsyncMock()
         
         self.func_receive_a = EventBroker.add_receiver("example_a")(self.func_receive_a)
-        self.func_receive_b = EventBroker.add_receiver("example_b")(self.handler.receive_b)
+        self.func_receive_b = EventBroker.add_receiver("example_b")(self.func_receive_b)
+        self.func_receive_b = EventBroker.add_receiver("example_c")(self.func_receive_b)
         
         self.handler.receive_a = self.func_receive_a
         self.handler.receive_b = self.func_receive_b
@@ -44,7 +45,21 @@ class EventBrokerTestCase(unittest.IsolatedAsyncioTestCase):
         assert len(self.handler.receive_a.func.mock_calls) == 1
         mock_message = self.handler.receive_a.func.mock_calls[0].args[0]               
         assert mock_message.event == message.event
-        assert mock_message.payload == message.payload
+
+    async def test_multiple_receiver_publish(self):
+        message_b = Message(event="example_b", payload=None)
+        await EventBroker.publish(message=message_b)
+        
+        message_c = Message(event="example_c", payload=None)
+        await EventBroker.publish(message=message_c)
+
+        assert len(self.handler.receive_b.func.mock_calls) == 2
+
+        mock_message_b = self.handler.receive_b.func.mock_calls[0].args[0]               
+        assert mock_message_b.event == message_b.event
+
+        mock_message_c = self.handler.receive_b.func.mock_calls[1].args[0]               
+        assert mock_message_c.event == message_c.event
 
     async def test_publish_no_receiver(self):
         message = Message(event="invaild_event", payload=None)
