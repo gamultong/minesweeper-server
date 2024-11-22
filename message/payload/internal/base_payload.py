@@ -1,8 +1,6 @@
 from .exceptions import InvalidFieldException, MissingFieldException
 
 class Payload():
-    event:str
-    
     @classmethod
     def _from_dict(cls, dict: dict):
         kwargs = {}

@@ -2,13 +2,13 @@ from board import Point
 from dataclasses import dataclass
 from .base_payload import Payload
 from enum import Enum
+
 class TilesEvent(str, Enum):
     FETCH_TILES = "fetch-tiles"
     TILES = "tiles"
 
 @dataclass
 class FetchTilesPayload(Payload):
-    event = "fetch-tiles"
     start_x:int
     start_y:int
     end_x:int
@@ -23,7 +23,6 @@ class FetchTilesPayload(Payload):
 
 @dataclass
 class TilesPayload(Payload):
-    event = "tiles"
     start_x:int
     start_y:int
     end_x:int
