@@ -4,10 +4,11 @@ from board.handler import BoardHandler
 
 app = FastAPI()
 
+
 @app.websocket("/session")
 async def session(ws: WebSocket):
     conn = await ConnectionManager.add(ws)
-    
+
     while True:
         try:
             msg = await conn.receive()
@@ -18,9 +19,11 @@ async def session(ws: WebSocket):
 
     await ConnectionManager.close(conn)
 
+
 @app.get("/")
 def health_check():
     return Response()
+
 
 if __name__ == "__main__":
     import uvicorn

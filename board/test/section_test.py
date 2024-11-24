@@ -16,9 +16,9 @@ FETCH_TEST_CASES = [
         "range": {
             "start_point": EXAMPLE_POINT,
             "end_point": Point(
-                x=Section.LENGTH-1, 
+                x=Section.LENGTH-1,
                 y=0
-                )
+            )
         },
         "expect": EXAPMLE_SECTION_DATA
     },
@@ -33,26 +33,27 @@ FETCH_TEST_CASES = [
         "desc": "fetch end",
         "range": {
             "start_point": Point(
-                x=Section.LENGTH - 1, 
+                x=Section.LENGTH - 1,
                 y=0
-                )
+            )
         },
         "expect": EXAPMLE_SECTION_DATA[(Section.LENGTH ** 2) - 1]
     }
 ]
 
+
 class SectionTestCase(unittest.TestCase):
     def setUp(self):
         self.section = Section.from_str(
-            p=EXAMPLE_POINT, 
+            p=EXAMPLE_POINT,
             data=EXAPMLE_SECTION_DATA
-            )
+        )
 
     def test_create(self):
         self.section = Section.from_str(
-            p=EXAMPLE_POINT, 
+            p=EXAMPLE_POINT,
             data=EXAPMLE_SECTION_DATA
-            )
+        )
 
         assert self.section.p == EXAMPLE_POINT
 
@@ -63,7 +64,7 @@ class SectionTestCase(unittest.TestCase):
     def test_fetch(self, desc, range, expect):
         start = range["start_point"]
         end = range["end_point"] if "end_point" in range else None
-        
+
         data = self.section.fetch(start=start, end=end)
 
         # list[bytearray]인 경우 1차원으로 flatten
@@ -79,7 +80,7 @@ class SectionTestCase(unittest.TestCase):
         #     "desc": "fetch out of range",
         #     "range": {
         #         "start_point": Point(
-        #             x=EXAMPLE_POINT.x + Section.LENGTH + 1, 
+        #             x=EXAMPLE_POINT.x + Section.LENGTH + 1,
         #             y=EXAMPLE_POINT.y
         #             )
         #     },

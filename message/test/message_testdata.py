@@ -1,5 +1,5 @@
 FETCH_TILES_EXAMPLE = \
-"""
+    """
 {
 	"event": "fetch-tiles",
 	"payload": {
@@ -12,7 +12,7 @@ FETCH_TILES_EXAMPLE = \
 """
 
 TILES_EXAMPLE = \
-"""
+    """
 {
 	"event": "tiles",
 	"payload": {
@@ -26,7 +26,7 @@ TILES_EXAMPLE = \
 """
 
 INVALID_EVENT_EXAMPLE = \
-"""
+    """
 {
 	"event": "ayo invalid",
 	"payload": {
