@@ -1,0 +1,20 @@
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  fast-forward-job:
+    name: Fast Forward
+    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/fast-forward')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fast Forward PR
+        uses: endre-spotlab/fast-forward-js-action@2.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.FAST_FORWARD_GITHUB_TOKEN }}
+          success_message: "Success! Fast forwarded target_base to source_head! git checkout target_base && git merge source_head --ff-only "
+          failure_message: "Failed! Cannot do fast forward!"
+          production_branch: "main"
+          staging_branch: "develop"
