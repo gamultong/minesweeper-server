@@ -11,7 +11,6 @@ class TilesEvent(str, Enum):
 
 @dataclass
 class FetchTilesPayload(Payload):
-    event = "fetch-tiles"
     start_x: int
     start_y: int
     end_x: int
@@ -28,7 +27,6 @@ class FetchTilesPayload(Payload):
 
 @dataclass
 class TilesPayload(Payload):
-    event = "tiles"
     start_x: int
     start_y: int
     end_x: int
