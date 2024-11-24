@@ -1,11 +1,17 @@
+name: Fast Forward Merge
+
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  fast-forward-job:
+  fast-forward-merge:
     name: Fast Forward
-    if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/fast-forward')
+    if: |
+      github.event.issue.pull_request && 
+      contains(github.event.comment.body, '/fast-forward') && 
+      (github.head_ref == 'develop' && github.base_ref == 'main') &&
+      (github.triggering_actor == 'onee-only' || github.triggering_actor == 'byundojin')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
