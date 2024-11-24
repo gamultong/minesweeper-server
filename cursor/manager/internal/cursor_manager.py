@@ -1,6 +1,7 @@
 from cursor import Cursor
 from board import Point
 
+
 class CursorManager:
     cursor_dict: dict[str, Cursor]
 

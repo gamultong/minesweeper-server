@@ -21,7 +21,7 @@ class BasePayloadTestCase(unittest.TestCase):
 
         assert payload.wrapped.foo == "foo"
         assert payload.wrapped.bar == "bar"
-    
+
     @cases(EXCEPTION_TEST_CASES)
     def test_from_dict_wrongs(self, dict, payload, exp, msg):
         with self.assertRaises(exp) as cm:
@@ -29,7 +29,6 @@ class BasePayloadTestCase(unittest.TestCase):
 
         assert cm.exception.msg == msg
 
-    
 
 if __name__ == "__main__":
     unittest.main()

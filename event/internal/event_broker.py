@@ -5,45 +5,46 @@ from .exceptions import NoMatchingReceiverException
 from message.internal.message import EVENT_TYPE
 from uuid import uuid4
 
+
 class Receiver(Generic[EVENT_TYPE]):
-    receiver_dict:dict[str, Receiver] = {}
+    receiver_dict: dict[str, Receiver] = {}
 
     def __init__(self, func, event):
-        self.func:Callable[[Message[EVENT_TYPE]], None] = func
-        self.events:list[str] = [event]
-        self.id:str = self.__get_uuid()
+        self.func: Callable[[Message[EVENT_TYPE]], None] = func
+        self.events: list[str] = [event]
+        self.id: str = self.__get_uuid()
         Receiver.receiver_dict[self.id] = self
 
     def __get_uuid(self):
-        while (id:=uuid4().hex) in Receiver.receiver_dict:
+        while (id := uuid4().hex) in Receiver.receiver_dict:
             pass
         return id
-    
+
     def remove(self):
         if self.id not in Receiver.receiver_dict:
             return False
         del Receiver.receiver_dict[self.id]
         return True
 
-    async def __call__(self, msg:Message[EVENT_TYPE]):
+    async def __call__(self, msg: Message[EVENT_TYPE]):
         return await self.func(msg)
 
     @staticmethod
-    def get_receiver(id: str) -> Receiver|None:
+    def get_receiver(id: str) -> Receiver | None:
         if id not in Receiver.receiver_dict:
             return None
         return Receiver.receiver_dict[id]
-    
 
-class EventBroker: 
+
+class EventBroker:
     event_dict: dict[str, list[str]] = {}
 
     @staticmethod
     def add_receiver(event: str):
         if event not in EventBroker.event_dict:
             EventBroker.event_dict[event] = []
-        
-        def wrapper(func: Callable|Receiver):
+
+        def wrapper(func: Callable | Receiver):
             if type(func) == Receiver:
                 func.events.append(event)
                 receiver = func
@@ -76,4 +77,3 @@ class EventBroker:
         for id in receiver_ids:
             receiver = Receiver.get_receiver(id)
             await receiver(message)
-        

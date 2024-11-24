@@ -2,6 +2,7 @@ from fastapi.websockets import WebSocket
 from message import Message
 from dataclasses import dataclass
 
+
 @dataclass
 class Conn:
     id: str
@@ -16,7 +17,7 @@ class Conn:
 
     async def close(self):
         await self.conn.close()
-    
+
     async def receive(self):
         return Message.from_str(await self.conn.receive_text())
 

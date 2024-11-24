@@ -4,29 +4,31 @@ from .exceptions import InvalidEventTypeException
 
 import json
 
-EVENT_TYPE = TypeVar(\
+EVENT_TYPE = TypeVar(
     "EVENT_TYPE",
     bound=Payload
 )
 
-PAYLOAD_DICT:dict[str, Payload] = {
+PAYLOAD_DICT: dict[str, Payload] = {
     "fetch-tiles": FetchTilesPayload,
     "tiles": TilesPayload
 }
+
+
 class Message(Generic[EVENT_TYPE]):
-    def __init__(self, event:str, payload:EVENT_TYPE):
+    def __init__(self, event: str, payload: EVENT_TYPE):
         self.event = event
         self.payload = payload
 
     def to_str(self):
         return json.dumps(
             self,
-            default=lambda o: o.__dict__, 
+            default=lambda o: o.__dict__,
             sort_keys=True
-            )
-    
+        )
+
     @staticmethod
-    def from_str(msg:str):
+    def from_str(msg: str):
         decoded = json.loads(msg)
 
         event = decoded["event"]
@@ -34,11 +36,12 @@ class Message(Generic[EVENT_TYPE]):
 
         return Message(event=event, payload=payload)
 
+
 def decode_data(event: str, data: dict):
     """
     data를 Payload로 decode
     """
     if not event in PAYLOAD_DICT:
         raise InvalidEventTypeException(event)
-    
+
     return PAYLOAD_DICT[event]._from_dict(data)

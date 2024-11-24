@@ -4,6 +4,7 @@ from board.handler import Point
 from message.payload import FetchTilesPayload, TilesPayload
 from .testdata.tiles_payload_testdata import EXAPLE_FETCH_TILES_DICT, EXAPLE_TILES_DICT
 
+
 class FetchTilesPayloadTestCase(unittest.TestCase):
     def setUp(self):
         self.payload = FetchTilesPayload._from_dict(EXAPLE_FETCH_TILES_DICT)
@@ -18,10 +19,11 @@ class FetchTilesPayloadTestCase(unittest.TestCase):
         assert type(self.payload.start_p) == Point
         assert self.payload.start_p.x == 0
         assert self.payload.start_p.y == 0
-        
+
         assert type(self.payload.end_p) == Point
         assert self.payload.end_p.x == 0
         assert self.payload.end_p.y == 0
+
 
 class TilesPayloadTestCase(unittest.TestCase):
     def setUp(self):
