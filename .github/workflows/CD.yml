@@ -35,7 +35,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@master
         with:
-          sparse-checkout: config/scripts/deploy.sh
+          sparse-checkout: tools/deploy.sh
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@master
@@ -43,4 +43,4 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.KEY }}
-          script_path: config/scripts/deploy.sh
+          script_path: tools/deploy.sh
