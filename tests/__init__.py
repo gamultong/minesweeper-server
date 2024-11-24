@@ -15,7 +15,7 @@ from board.handler.test import *
 from conn.test import *
 from conn.manager.test import *
 
-#cursor
+# cursor
 from cursor.test import *
 from cursor.manager.test import *
 

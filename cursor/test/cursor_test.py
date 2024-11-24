@@ -1,6 +1,7 @@
 from cursor import Cursor, Color
 import unittest
 
+
 class CursorTestCase(unittest.TestCase):
     def test_cursor_create(self):
         conn_id = "some id"
@@ -11,6 +12,7 @@ class CursorTestCase(unittest.TestCase):
         self.assertEqual(cursor.position.y, 0)
         self.assertIsNone(cursor.pointer)
         self.assertIn(cursor.color, Color)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,11 +7,13 @@ class ExamplePayload(Payload):
     foo: str
     bar: str
 
+
 @dataclass
 class ExampleWrapperPayload(Payload):
     a: int
     b: str
     wrapped: ExamplePayload
+
 
 EXAMPLE_PAYLOAD_DICT = {
     "foo": "foo",
@@ -58,41 +60,41 @@ EXAMPLE_PAYLOAD_WRAPPED_DICT_INVALID_VALUE_TYPE = {
 }
 
 EXCEPTION_TEST_CASES = \
-[
-    {
-        "dict": EXAMPLE_PAYLOAD_DICT_MISSING_KEY,
-        "payload": ExamplePayload,
-        "exp": MissingFieldException,
-        "msg": "missing 1 keys: foo"
-    },
-    {
-        "dict": EXAMPLE_PAYLOAD_DICT_INVALID_VALUE_TYPE,
-        "payload": ExamplePayload,
-        "exp": InvalidFieldException,
-        "msg": "invaild field: bar -> 1"
-    },
-    {
-        "dict": EXAMPLE_PAYLOAD_DICT_INVALID_KEY,
-        "payload": ExamplePayload,
-        "exp": InvalidFieldException,
-        "msg": "invaild field: baz -> baz"
-    },
-    {
-        "dict": EXAMPLE_PAYLOAD_WRAPPED_DICT_MISSING_KEY,
-        "payload": ExampleWrapperPayload,
-        "exp": MissingFieldException,
-        "msg": "missing 1 keys: wrapped.foo"
-    },
-    {
-        "dict": EXAMPLE_PAYLOAD_WRAPPED_DICT_INVALID_VALUE_TYPE,
-        "payload": ExampleWrapperPayload,
-        "exp": InvalidFieldException,
-        "msg": "invaild field: wrapped.bar -> 1"
-    },
-    {
-        "dict": EXAMPLE_PAYLOAD_WRAPPED_DICT_INVALID_KEY,
-        "payload": ExampleWrapperPayload,
-        "exp": InvalidFieldException,
-        "msg": "invaild field: wrapped.baz -> baz"
-    },
-]
+    [
+        {
+            "dict": EXAMPLE_PAYLOAD_DICT_MISSING_KEY,
+            "payload": ExamplePayload,
+            "exp": MissingFieldException,
+            "msg": "missing 1 keys: foo"
+        },
+        {
+            "dict": EXAMPLE_PAYLOAD_DICT_INVALID_VALUE_TYPE,
+            "payload": ExamplePayload,
+            "exp": InvalidFieldException,
+            "msg": "invaild field: bar -> 1"
+        },
+        {
+            "dict": EXAMPLE_PAYLOAD_DICT_INVALID_KEY,
+            "payload": ExamplePayload,
+            "exp": InvalidFieldException,
+            "msg": "invaild field: baz -> baz"
+        },
+        {
+            "dict": EXAMPLE_PAYLOAD_WRAPPED_DICT_MISSING_KEY,
+            "payload": ExampleWrapperPayload,
+            "exp": MissingFieldException,
+            "msg": "missing 1 keys: wrapped.foo"
+        },
+        {
+            "dict": EXAMPLE_PAYLOAD_WRAPPED_DICT_INVALID_VALUE_TYPE,
+            "payload": ExampleWrapperPayload,
+            "exp": InvalidFieldException,
+            "msg": "invaild field: wrapped.bar -> 1"
+        },
+        {
+            "dict": EXAMPLE_PAYLOAD_WRAPPED_DICT_INVALID_KEY,
+            "payload": ExampleWrapperPayload,
+            "exp": InvalidFieldException,
+            "msg": "invaild field: wrapped.baz -> baz"
+        },
+    ]

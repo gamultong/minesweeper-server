@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 from fastapi.websockets import WebSocket
 
+
 def create_connection_mock() -> WebSocket:
     con = MagicMock()
     con.accept = AsyncMock()

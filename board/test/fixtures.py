@@ -13,6 +13,7 @@ from board import Board, Section, Point
     -4-3-2-1 0 1 2 3
 """
 
+
 def setup_board():
     Section.LENGTH = 4
 
@@ -32,4 +33,3 @@ def setup_board():
                 -1: SECTION_3
             }
         }
-    

@@ -7,6 +7,7 @@ from message import Message
 from message.internal.message import PAYLOAD_DICT
 from conn import Conn
 
+
 @dataclass
 class ExamplePayload(Payload):
     event = "example"
@@ -24,7 +25,7 @@ class ConnectionTestCase(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
         del PAYLOAD_DICT["example"]
         return super().tearDown()
-    
+
     def test_create(self):
         assert self.conn_obj.id == self.id
         assert self.conn_obj.conn == self.conn
@@ -46,7 +47,7 @@ class ConnectionTestCase(unittest.IsolatedAsyncioTestCase):
         assert self.conn.send_text.mock_calls[0].args[0] == msg.to_str()
 
     async def test_receive(self):
-        msg:Message[ExamplePayload] = Message("example", payload=ExamplePayload(a=0))
+        msg: Message[ExamplePayload] = Message("example", payload=ExamplePayload(a=0))
 
         self.conn.receive_text.return_value = msg.to_str()
 
@@ -55,4 +56,3 @@ class ConnectionTestCase(unittest.IsolatedAsyncioTestCase):
         assert len(self.conn.receive_text.mock_calls) == 1
         self.assertEqual(msg.event, got.event)
         self.assertEqual(msg.payload.a, got.payload.a)
-

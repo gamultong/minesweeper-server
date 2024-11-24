@@ -9,22 +9,21 @@ SECTION_3 = Section.from_str(Point(-1, -1), open(f"{DATA_PATH}/data3.txt", "r").
 SECTION_4 = Section.from_str(Point(0, -1), open(f"{DATA_PATH}/data4.txt", "r").read())
 
 BOARD_DATA = \
-{
-    0: {
-        0: SECTION_2,
-        -1: SECTION_1
-    },
-    -1: {
-        0: SECTION_4,
-        -1: SECTION_3
+    {
+        0: {
+            0: SECTION_2,
+            -1: SECTION_1
+        },
+        -1: {
+            0: SECTION_4,
+            -1: SECTION_3
+        }
     }
-}
-
 
 
 class Board:
     # sections[y][x]
-    sections:dict[int, dict[int, Section]] = BOARD_DATA
+    sections: dict[int, dict[int, Section]] = BOARD_DATA
 
     @staticmethod
     def fetch(start: Point, end: Point):
@@ -43,16 +42,16 @@ class Board:
                     x=min(end.x, section.abs_x + Section.LENGTH-1) - section.abs_x,
                     y=max(end.y, section.abs_y) - section.abs_y
                 )
-                
+
                 fetched = section.fetch(start=start_p, end=end_p)
-                
+
                 for y in range(len(fetched)):
                     out[offset+y] += fetched[y]
 
             offset += len(fetched)
 
         return bytearray().join(out).decode("ascii")
-    
+
     @staticmethod
     def _debug():
         for y in Board.sections:
