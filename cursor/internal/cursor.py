@@ -9,6 +9,8 @@ class Cursor:
     position: Point
     pointer: Point | None
     color: Color
+    width: int
+    height: int
 
     @staticmethod
     def create(conn_id: str):
@@ -18,3 +20,7 @@ class Cursor:
             pointer=None,
             color=Color.get_random()
         )
+
+    def set_size(self, width: int, height: int):
+        self.width = width
+        self.height = height
