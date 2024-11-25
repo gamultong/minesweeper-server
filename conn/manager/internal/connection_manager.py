@@ -43,5 +43,6 @@ class ConnectionManager:
             await conn.send(message)
 
     @staticmethod
-    async def handle_message(message: Message):
+    async def handle_message(message: Message, conn_id: str):
+        message.header["sender"] = conn_id
         await EventBroker.publish(message)

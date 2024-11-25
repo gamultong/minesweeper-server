@@ -30,6 +30,7 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_receive_fetch_tiles(self):
         message = Message(
             event=TilesEvent.FETCH_TILES,
+            header={"sender": "ayo"},
             payload=FetchTilesPayload(-2, 1, 1, -2)
         )
 
@@ -41,6 +42,10 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         assert type(got) == Message
         assert got.event == TilesEvent.TILES
 
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == message.header["sender"]
+
         assert type(got.payload) == TilesPayload
         assert got.payload.start_x == -2
         assert got.payload.start_y == 1
@@ -51,6 +56,7 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_receive_new_conn(self):
         message = Message(
             event=NewConnEvent.NEW_CONN,
+            header={"sender": "ayo"},
             payload=NewConnPayload(conn_id="not important", width=2, height=2)
         )
 
@@ -61,6 +67,10 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
 
         assert type(got) == Message
         assert got.event == TilesEvent.TILES
+
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == message.header["sender"]
 
         assert type(got.payload) == TilesPayload
         assert got.payload.start_x == -2

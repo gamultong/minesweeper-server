@@ -8,10 +8,13 @@ class BoardHandler():
     @EventBroker.add_receiver(TilesEvent.FETCH_TILES)
     @staticmethod
     async def receive_fetch_tiles(message: Message[FetchTilesPayload]):
+        sender = message.header["sender"]
+
         tiles = Board.fetch(message.payload.start_p, message.payload.end_p)
 
         resp_message = Message(
             event=TilesEvent.TILES,
+            header={"target_conns": [sender]},
             payload=TilesPayload(
                 start_x=message.payload.start_x,
                 start_y=message.payload.start_y,
@@ -26,6 +29,8 @@ class BoardHandler():
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
     async def receive_new_conn(message: Message[NewConnPayload]):
+        sender = message.header["sender"]
+
         # 0, 0 기준으로 fetch
         width = message.payload.width
         height = message.payload.height
@@ -37,6 +42,7 @@ class BoardHandler():
         # TODO: header 추가하기. 위 메서드도
         resp_message = Message(
             event=TilesEvent.TILES,
+            header={"target_conns": [sender]},
             payload=TilesPayload(
                 start_x=start_p.x,
                 start_y=start_p.y,

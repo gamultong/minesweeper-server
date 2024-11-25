@@ -118,6 +118,10 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
         assert type(got) == Message
         assert got.event == NewConnEvent.MY_CURSOR
 
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == expected_conn_id
+
     async def test_receive_new_conn_with_cursors(self):
         # TODO: 쿼리 로직 바뀌면 이것도 같이 바꿔야 함.
         CursorManager.cursor_dict = {
@@ -145,17 +149,29 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
         assert type(got) == Message
         assert got.event == NewConnEvent.MY_CURSOR
 
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == expected_conn_id
+
         self.assertEqual(len(self.mock_nearby_cursor_func.mock_calls), 1)
         got = self.mock_nearby_cursor_func.mock_calls[0].args[0]
 
         assert type(got) == Message
         assert got.event == NewConnEvent.NEARYBY_CURSORS
 
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == expected_conn_id
+
         self.assertEqual(len(self.mock_cursor_appeared_func.mock_calls), 1)
         got = self.mock_cursor_appeared_func.mock_calls[0].args[0]
 
         assert type(got) == Message
         assert got.event == NewConnEvent.CURSOR_APPEARED
+
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == len(CursorManager.cursor_dict)
+        assert set(got.header["target_conns"]) == set([c.conn_id for c in CursorManager.cursor_dict.values()])
 
 
 if __name__ == "__main__":

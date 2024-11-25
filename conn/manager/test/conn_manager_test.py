@@ -9,6 +9,7 @@ from message.payload import TilesPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
 
+
 class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.con = create_connection_mock()
@@ -21,7 +22,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         assert type(con_obj) == Conn
 
         assert ConnectionManager.get_conn(con_obj.id).id == con_obj.id
-    
+
     def test_get_conn(self):
         valid_id = "abc"
         invalid_id = "abcdef"
@@ -35,11 +36,11 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
 
         conns = [create_connection_mock() for _ in range(n_conns)]
         conn_ids = [None] * n_conns
-        
+
         for idx, conn in enumerate(conns):
             conn_obj = await ConnectionManager.add(conn=conn)
             conn_ids[idx] = conn_obj.id
-            
+
         for id in conn_ids:
             assert conn_ids.count(id) == 1
             # UUID 포맷인지 확인. 아니면 ValueError
@@ -47,30 +48,36 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
 
     async def test_receive_tiles_event(self):
         _ = await ConnectionManager.add(self.con)
-        
+
         message = Message(event="tiles", payload=TilesPayload(
-            0,0,0,0,"abcdefg"
+            0, 0, 0, 0, "abcdefg"
         ))
-        
+
         await EventBroker.publish(message)
 
         self.assertEqual(len(self.con.send_text.mock_calls), 1)
-        
+
         mock_call = self.con.send_text.mock_calls[0]
         self.assertEqual(mock_call.args[0], message.to_str())
 
     async def test_handle_message(self):
         mock = AsyncMock()
         EventBroker.add_receiver("example")(mock)
-        
+
         message = Message(event="example", payload=TilesPayload(
-            0,0,0,0,"abcdefg"
+            0, 0, 0, 0, "abcdefg"
         ))
-          
-        await ConnectionManager.handle_message(message=message)
+
+        conn_id = "haha this is some random conn id"
+
+        await ConnectionManager.handle_message(message=message, conn_id=conn_id)
 
         self.assertEqual(len(mock.mock_calls), 1)
-        self.assertEqual(mock.mock_calls[0].args[0].to_str(), message.to_str())
+
+        got = mock.mock_calls[0].args[0]
+        self.assertEqual(got.header["sender"], conn_id)
+        self.assertEqual(got.to_str(), message.to_str())
+
 
 if __name__ == "__main__":
     unittest.main()

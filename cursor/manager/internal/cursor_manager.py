@@ -38,10 +38,7 @@ class CursorManager:
 
         new_cursor_message = Message(
             event=NewConnEvent.MY_CURSOR,
-            # ToDo
-            # header = {
-            #     "target_conns":[cursor.conn_id]
-            # },
+            header={"target_conns": [cursor.conn_id]},
             payload=NewCursorPayload(
                 position=cursor.position,
                 pointer=cursor.pointer,
@@ -64,6 +61,7 @@ class CursorManager:
         if len(cursors_in_range) > 0:
             nearby_cursors_message = Message(
                 event=NewConnEvent.NEARYBY_CURSORS,
+                header={"target_conns": [message.payload.conn_id]},
                 payload=NearbyCursorPayload(
                     cursors=[
                         CursorPayload(c.position, c.pointer, c.color) for c in cursors_in_range
@@ -77,6 +75,7 @@ class CursorManager:
         if len(cursors_with_view_including) > 0:
             cursor_appeared_message = Message(
                 event=NewConnEvent.CURSOR_APPEARED,
+                header={"target_conns": [cursor.conn_id for cursor in cursors_with_view_including]},
                 payload=CursorAppearedPayload(
                     position=cursor.position,
                     pointer=cursor.pointer,
@@ -84,5 +83,4 @@ class CursorManager:
                 )
             )
 
-            # TODO: 각 커서마다 발행
             await EventBroker.publish(cursor_appeared_message)
