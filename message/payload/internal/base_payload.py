@@ -1,9 +1,9 @@
 from .exceptions import InvalidFieldException, MissingFieldException
+from .parsable_payload import ParsablePayload
+from typing import Generic
 
 
 class Payload():
-    event: str
-
     @classmethod
     def _from_dict(cls, dict: dict):
         kwargs = {}
@@ -19,6 +19,15 @@ class Payload():
                 raise InvalidFieldException(key, dict[key])
 
             t = cls.__annotations__[key]
+            if hasattr(t, "__origin__") and t.__origin__ == ParsablePayload:
+                if len(t.__args__) != 1:
+                    raise
+                try:
+                    kwargs[key] = t.__args__[0](**dict[key])
+                except:
+                    raise
+                continue
+
             if issubclass(t, Payload):
                 try:
                     kwargs[key] = t._from_dict(dict[key])
