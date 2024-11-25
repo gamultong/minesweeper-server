@@ -12,13 +12,16 @@ from conn.test.fixtures import create_connection_mock
 
 class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.con = create_connection_mock()
+        self.con1 = create_connection_mock()
+        self.con2 = create_connection_mock()
+        self.con3 = create_connection_mock()
+        self.con4 = create_connection_mock()
 
     def tearDown(self):
         ConnectionManager.conns = {}
 
     async def test_add(self):
-        con_obj = await ConnectionManager.add(self.con)
+        con_obj = await ConnectionManager.add(self.con1)
         assert type(con_obj) == Conn
 
         assert ConnectionManager.get_conn(con_obj.id).id == con_obj.id
@@ -46,6 +49,14 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
             # UUID 포맷인지 확인. 아니면 ValueError
             uuid.UUID(id)
 
+    async def test_receive_broadcast_event(self):
+        _ = await ConnectionManager.add(self.con1)
+        _ = await ConnectionManager.add(self.con2)
+        _ = await ConnectionManager.add(self.con3)
+        _ = await ConnectionManager.add(self.con4)
+
+        message = Message(event="broadcast", payload=None)
+
     async def test_receive_tiles_event(self):
         _ = await ConnectionManager.add(self.con)
 
@@ -55,6 +66,9 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
 
         await EventBroker.publish(message)
 
+        self.assertEqual(len(self.con1.send_text.mock_calls), 1)
+
+        mock_call = self.con1.send_text.mock_calls[0]
         self.assertEqual(len(self.con.send_text.mock_calls), 1)
 
         mock_call = self.con.send_text.mock_calls[0]
@@ -67,6 +81,8 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         message = Message(event="example", payload=TilesPayload(
             0, 0, 0, 0, "abcdefg"
         ))
+
+        await ConnectionManager.handle_message(message=message)
 
         conn_id = "haha this is some random conn id"
 
