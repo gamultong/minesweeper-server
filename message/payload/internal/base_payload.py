@@ -1,4 +1,4 @@
-from .exceptions import InvalidFieldException, MissingFieldException
+from .exceptions import InvalidFieldException, MissingFieldException, DumbHumanException
 from .parsable_payload import ParsablePayload
 from typing import Generic
 
@@ -21,11 +21,11 @@ class Payload():
             t = cls.__annotations__[key]
             if hasattr(t, "__origin__") and t.__origin__ == ParsablePayload:
                 if len(t.__args__) != 1:
-                    raise
+                    raise DumbHumanException()
                 try:
                     kwargs[key] = t.__args__[0](**dict[key])
                 except:
-                    raise
+                    raise MissingFieldException(key, e)
                 continue
 
             if issubclass(t, Payload):
