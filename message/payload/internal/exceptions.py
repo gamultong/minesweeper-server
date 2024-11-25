@@ -31,3 +31,8 @@ class MissingFieldException(BaseException):
         if type(self.value) == self.__class__:
             return map(lambda key: f"{self.key}.{key}", self.value.get_keys())
         return self.key
+
+
+class DumbHumanException(BaseException):
+    def __repr__(self):
+        return "worng use"
