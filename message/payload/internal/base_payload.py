@@ -25,7 +25,7 @@ class Payload():
                 try:
                     kwargs[key] = t.__args__[0](**dict[key])
                 except:
-                    raise MissingFieldException(key, e)
+                    raise InvalidFieldException(key, e)
                 continue
 
             if issubclass(t, Payload):
