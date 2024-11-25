@@ -30,7 +30,7 @@ class CursorManager:
 
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
-    async def receiver_new_conn(message: Message[NewConnPayload]):
+    async def receive_new_conn(message: Message[NewConnPayload]):
         CursorManager.create(message.payload.conn_id)
 
         cursor = CursorManager.cursor_dict[message.payload.conn_id]
@@ -52,12 +52,12 @@ class CursorManager:
         await EventBroker.publish(new_cursor_message)
 
         start_p = Point(
-            cursor.position.x, - cursor.width,
-            cursor.position.y, + cursor.height,
+            x=cursor.position.x - cursor.width,
+            y=cursor.position.y + cursor.height
         )
         end_p = Point(
-            cursor.position.x, + cursor.width,
-            cursor.position.y, - cursor.height,
+            x=cursor.position.x + cursor.width,
+            y=cursor.position.y - cursor.height
         )
 
         cursors_in_range = CursorManager.exists_range(start_p, end_p)
@@ -66,7 +66,7 @@ class CursorManager:
                 event=NewConnEvent.NEARYBY_CURSORS,
                 payload=NearbyCursorPayload(
                     cursors=[
-                        CursorPayload(c.positoin, c.pointer, c.color) for c in cursors_in_range
+                        CursorPayload(c.position, c.pointer, c.color) for c in cursors_in_range
                     ]
                 )
             )
