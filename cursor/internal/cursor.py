@@ -18,7 +18,9 @@ class Cursor:
             conn_id=conn_id,
             position=Point(0, 0),
             pointer=None,
-            color=Color.get_random()
+            color=Color.get_random(),
+            width=0,
+            height=0
         )
 
     def set_size(self, width: int, height: int):
