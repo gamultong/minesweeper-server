@@ -1,6 +1,7 @@
 from board import Point
 from dataclasses import dataclass
 from .base_payload import Payload
+from .parsable_payload import ParsablePayload
 from enum import Enum
 
 
@@ -11,32 +12,11 @@ class TilesEvent(str, Enum):
 
 @dataclass
 class FetchTilesPayload(Payload):
-    start_x: int
-    start_y: int
-    end_x: int
-    end_y: int
-
-    @property
-    def start_p(self):
-        return Point(self.start_x, self.start_y)
-
-    @property
-    def end_p(self):
-        return Point(self.end_x, self.end_y)
-
+    start_p: ParsablePayload[Point]
+    end_p: ParsablePayload[Point]
 
 @dataclass
 class TilesPayload(Payload):
-    start_x: int
-    start_y: int
-    end_x: int
-    end_y: int
+    start_p: ParsablePayload[Point]
+    end_p: ParsablePayload[Point]
     tiles: str
-
-    @property
-    def start_p(self):
-        return Point(self.start_x, self.start_y)
-
-    @property
-    def end_p(self):
-        return Point(self.end_x, self.end_y)

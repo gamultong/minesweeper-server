@@ -8,6 +8,7 @@ from message import Message
 from message.payload import TilesPayload, NewConnEvent, NewConnPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
+from board import Point
 
 
 class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
@@ -76,6 +77,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
             # UUID 포맷인지 확인. 아니면 ValueError
             uuid.UUID(id)
 
+
     async def test_receive_broadcast_event(self):
         _ = await ConnectionManager.add(self.con1, 1, 1)
         _ = await ConnectionManager.add(self.con2, 1, 1)
@@ -137,7 +139,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         message = Message(event="example",
                           header={"sender": conn_id},
                           payload=TilesPayload(
-                              0, 0, 0, 0, "abcdefg"
+                              Point(0,0),Point(0,0),"abcdefg"
                           ))
 
         await ConnectionManager.handle_message(message=message)

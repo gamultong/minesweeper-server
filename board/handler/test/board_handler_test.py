@@ -6,6 +6,7 @@ from event import EventBroker
 from message import Message
 from message.payload import FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload
 from board.test.fixtures import setup_board
+from board import Point
 
 
 class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
@@ -30,8 +31,9 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_receive_fetch_tiles(self):
         message = Message(
             event=TilesEvent.FETCH_TILES,
+            payload=FetchTilesPayload(Point(-2, 1), Point(1, -2)),
             header={"sender": "ayo"},
-            payload=FetchTilesPayload(-2, 1, 1, -2)
+
         )
 
         await BoardHandler.receive_fetch_tiles(message)
@@ -50,10 +52,10 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(got.header["origin_event"], TilesEvent.TILES)
 
         assert type(got.payload) == TilesPayload
-        assert got.payload.start_x == -2
-        assert got.payload.start_y == 1
-        assert got.payload.end_x == 1
-        assert got.payload.end_y == -2
+        assert got.payload.start_p.x == -2
+        assert got.payload.start_p.y == 1
+        assert got.payload.end_p.x == 1
+        assert got.payload.end_p.y == -2
         assert got.payload.tiles == "df12df12er56er56"
 
     async def test_receive_new_conn(self):
@@ -76,10 +78,10 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         assert got.header["target_conns"][0] == message.header["sender"]
 
         assert type(got.payload) == TilesPayload
-        assert got.payload.start_x == -2
-        assert got.payload.start_y == 2
-        assert got.payload.end_x == 2
-        assert got.payload.end_y == -2
+        assert got.payload.start_p.x == -2
+        assert got.payload.start_p.y == 2
+        assert got.payload.end_p.x == 2
+        assert got.payload.end_p.y == -2
         assert got.payload.tiles == "df123df123df123er567er567"
 
 
