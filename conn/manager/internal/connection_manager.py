@@ -67,11 +67,11 @@ class ConnectionManager:
     async def receive_multicast_event(message: Message):
         overwrite_event(message)
         if "target_conns" not in message.header:
-            raise
+            raise "header에 target_conns 없음"
         for conn_id in message.header["target_conns"]:
             conn = ConnectionManager.get_conn(conn_id)
             if not conn:
-                raise
+                raise "connection 없음"
 
             await conn.send(message)
 
