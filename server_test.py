@@ -5,7 +5,7 @@ from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent
 from board.test.fixtures import setup_board
 from event import EventBroker
-
+from board import Point
 import unittest
 from unittest.mock import AsyncMock
 
@@ -51,20 +51,16 @@ class ServerTestCase(unittest.TestCase):
             msg = Message(
                 event=TilesEvent.FETCH_TILES,
                 payload=FetchTilesPayload(
-                    start_x=-2,
-                    start_y=1,
-                    end_x=1,
-                    end_y=-2
+                    start_p=Point(-2, 1),
+                    end_p=Point(1, -2)
                 )
             )
 
             expect = Message(
                 event=TilesEvent.TILES,
                 payload=TilesPayload(
-                    start_x=-2,
-                    start_y=1,
-                    end_x=1,
-                    end_y=-2,
+                    start_p=Point(-2, 1),
+                    end_p=Point(1, -2),
                     tiles="df12df12er56er56"
                 )
             )
