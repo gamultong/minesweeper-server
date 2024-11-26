@@ -2,7 +2,7 @@ from enum import Enum
 from random import randint
 
 
-class Color(Enum):
+class Color(str, Enum):
     RED = "RED"
     YELLOW = "YELLOW"
     GREEN = "GREEN"

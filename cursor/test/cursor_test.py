@@ -12,6 +12,8 @@ class CursorTestCase(unittest.TestCase):
         self.assertEqual(cursor.position.y, 0)
         self.assertIsNone(cursor.pointer)
         self.assertIn(cursor.color, Color)
+        self.assertEqual(cursor.width, 0)
+        self.assertEqual(cursor.height, 0)
 
 
 if __name__ == "__main__":

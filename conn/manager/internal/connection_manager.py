@@ -1,9 +1,17 @@
 from fastapi.websockets import WebSocket
 from conn import Conn
 from message import Message
-from message.payload import TilesPayload
+from message.payload import TilesPayload, NewConnEvent, NewConnPayload
 from event import EventBroker
 from uuid import uuid4
+
+
+def overwrite_event(msg: Message):
+    if "origin_event" not in msg.header:
+        return
+
+    msg.event = msg.header["origin_event"]
+    del msg.header["origin_event"]
 
 
 class ConnectionManager:
@@ -16,12 +24,23 @@ class ConnectionManager:
         return None
 
     @staticmethod
-    async def add(conn: WebSocket) -> Conn:
+    async def add(conn: WebSocket, width: int, height: int) -> Conn:
         id = ConnectionManager.generate_conn_id()
 
         conn_obj = Conn(id=id, conn=conn)
         await conn_obj.accept()
         ConnectionManager.conns[id] = conn_obj
+
+        message = Message(
+            event=NewConnEvent.NEW_CONN,
+            payload=NewConnPayload(
+                conn_id=id,
+                height=height,
+                width=width
+            )
+        )
+
+        await EventBroker.publish(message)
 
         return conn_obj
 
@@ -35,11 +54,25 @@ class ConnectionManager:
             pass
         return id
 
-    @EventBroker.add_receiver("tiles")
+    @EventBroker.add_receiver("broadcast")
     @staticmethod
-    async def receive_tiles_event(message: Message[TilesPayload]):
+    async def receive_broadcast_event(message: Message):
+        overwrite_event(message)
         for id in ConnectionManager.conns:
             conn = ConnectionManager.conns[id]
+            await conn.send(message)
+
+    @EventBroker.add_receiver("multicast")
+    @staticmethod
+    async def receive_multicast_event(message: Message):
+        overwrite_event(message)
+        if "target_conns" not in message.header:
+            raise "header에 target_conns 없음"
+        for conn_id in message.header["target_conns"]:
+            conn = ConnectionManager.get_conn(conn_id)
+            if not conn:
+                raise "connection 없음"
+
             await conn.send(message)
 
     @staticmethod

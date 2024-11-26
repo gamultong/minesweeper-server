@@ -1,7 +1,10 @@
 from cursor import Cursor
 from cursor.manager import CursorManager
+from event import EventBroker
+from message import Message
+from message.payload import NewConnEvent, NewConnPayload
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 from board import Point
 from warnings import warn
 
@@ -46,6 +49,103 @@ class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
         warn("아직 구현 안됨")
         # broadcast 기준
         self.assertEqual(len(result), 3)
+
+
+class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        # 기존 my-cursor 리시버 비우기 및 mock으로 대체
+        self.multicast_receivers = []
+        if "multicast" in EventBroker.event_dict:
+            self.multicast_receivers = EventBroker.event_dict["multicast"].copy()
+
+        EventBroker.event_dict["multicast"] = []
+
+        self.mock_multicast_func = AsyncMock()
+        self.mock_multicast_receiver = EventBroker.add_receiver(event="multicast")(func=self.mock_multicast_func)
+
+    def tearDown(self):
+        # 리시버 정상화
+        EventBroker.remove_receiver(self.mock_multicast_receiver)
+        EventBroker.event_dict["multicast"] = self.multicast_receivers
+
+        CursorManager.cursor_dict = {}
+
+    async def test_receive_new_conn_without_cursors(self):
+        CursorManager.cursor_dict = {}
+
+        expected_conn_id = "example"
+        expected_height = 100
+        expected_width = 100
+
+        message = Message(
+            event=NewConnEvent.NEW_CONN,
+            payload=NewConnPayload(
+                conn_id=expected_conn_id,
+                width=expected_width,
+                height=expected_height
+            )
+        )
+
+        await CursorManager.receive_new_conn(message)
+
+        self.assertEqual(len(self.mock_multicast_func.mock_calls), 3)
+        got = self.mock_multicast_func.mock_calls[0].args[0]
+
+        assert type(got) == Message
+        assert got.event == "multicast"
+
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == expected_conn_id
+
+    async def test_receive_new_conn_with_cursors(self):
+        # TODO: 쿼리 로직 바뀌면 이것도 같이 바꿔야 함.
+        CursorManager.cursor_dict = {
+            "some id": Cursor.create("some id")
+        }
+
+        expected_conn_id = "example"
+        expected_height = 100
+        expected_width = 100
+
+        message = Message(
+            event=NewConnEvent.NEW_CONN,
+            payload=NewConnPayload(
+                conn_id=expected_conn_id,
+                width=expected_width,
+                height=expected_height
+            )
+        )
+
+        await CursorManager.receive_new_conn(message)
+
+        self.assertEqual(len(self.mock_multicast_func.mock_calls), 3)
+        got = self.mock_multicast_func.mock_calls[0].args[0]
+
+        assert type(got) == Message
+        assert got.event == "multicast"
+
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == expected_conn_id
+
+        got = self.mock_multicast_func.mock_calls[1].args[0]
+
+        assert type(got) == Message
+        assert got.event == "multicast"
+
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == 1
+        assert got.header["target_conns"][0] == expected_conn_id
+
+        got = self.mock_multicast_func.mock_calls[2].args[0]
+
+        assert type(got) == Message
+        assert got.event == "multicast"
+
+        assert "target_conns" in got.header
+        assert len(got.header["target_conns"]) == len(CursorManager.cursor_dict)
+        assert set(got.header["target_conns"]) == set([c.conn_id for c in CursorManager.cursor_dict.values()])
 
 
 if __name__ == "__main__":
