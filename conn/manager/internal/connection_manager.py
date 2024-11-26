@@ -6,6 +6,14 @@ from event import EventBroker
 from uuid import uuid4
 
 
+def overwrite_event(msg: Message):
+    if "origin_event" not in msg.header:
+        return
+
+    msg.event = msg.header["origin_event"]
+    del msg.header["origin_event"]
+
+
 class ConnectionManager:
     conns: dict[str, Conn] = {}
 
@@ -35,14 +43,27 @@ class ConnectionManager:
             pass
         return id
 
-    @EventBroker.add_receiver("tiles")
+    @EventBroker.add_receiver("broadcast")
     @staticmethod
-    async def receive_tiles_event(message: Message[TilesPayload]):
+    async def receive_broadcast_event(message: Message):
+        overwrite_event(message)
         for id in ConnectionManager.conns:
             conn = ConnectionManager.conns[id]
             await conn.send(message)
 
+    @EventBroker.add_receiver("multicast")
     @staticmethod
-    async def handle_message(message: Message, conn_id: str):
-        message.header["sender"] = conn_id
+    async def receive_multicast_event(message: Message):
+        overwrite_event(message)
+        if "target_conns" not in message.header:
+            raise
+        for conn_id in message.header["target_conns"]:
+            conn = ConnectionManager.get_conn(conn_id)
+            if not conn:
+                raise
+
+            await conn.send(message)
+
+    @staticmethod
+    async def handle_message(message: Message):
         await EventBroker.publish(message)

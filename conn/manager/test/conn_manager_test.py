@@ -55,38 +55,65 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         _ = await ConnectionManager.add(self.con3)
         _ = await ConnectionManager.add(self.con4)
 
-        message = Message(event="broadcast", payload=None)
+        origin_event = "ayo"
 
-    async def test_receive_tiles_event(self):
-        _ = await ConnectionManager.add(self.con)
+        message = Message(event="broadcast", header={"origin_event": origin_event}, payload=None)
 
-        message = Message(event="tiles", payload=TilesPayload(
-            0, 0, 0, 0, "abcdefg"
-        ))
+        await EventBroker.publish(message)
+
+        expected = Message(event=origin_event, payload=None)
+
+        self.assertEqual(len(self.con1.send_text.mock_calls), 1)
+        self.assertEqual(len(self.con2.send_text.mock_calls), 1)
+        self.assertEqual(len(self.con3.send_text.mock_calls), 1)
+        self.assertEqual(len(self.con4.send_text.mock_calls), 1)
+
+        self.assertEqual(expected.to_str(), self.con1.send_text.mock_calls[0].args[0])
+        self.assertEqual(expected.to_str(), self.con2.send_text.mock_calls[0].args[0])
+        self.assertEqual(expected.to_str(), self.con3.send_text.mock_calls[0].args[0])
+        self.assertEqual(expected.to_str(), self.con4.send_text.mock_calls[0].args[0])
+
+    async def test_receive_multicast_event(self):
+        con1 = await ConnectionManager.add(self.con1)
+        con2 = await ConnectionManager.add(self.con2)
+        _ = await ConnectionManager.add(self.con3)
+        _ = await ConnectionManager.add(self.con4)
+
+        origin_event = "ayo"
+
+        message = Message(
+            event="multicast",
+            header={
+                "target_conns": [con1.id, con2.id],
+                "origin_event": origin_event
+            },
+            payload=None
+        )
+
+        expected = Message(event=origin_event, payload=None)
 
         await EventBroker.publish(message)
 
         self.assertEqual(len(self.con1.send_text.mock_calls), 1)
+        self.assertEqual(len(self.con2.send_text.mock_calls), 1)
+        self.assertEqual(len(self.con3.send_text.mock_calls), 0)
+        self.assertEqual(len(self.con4.send_text.mock_calls), 0)
 
-        mock_call = self.con1.send_text.mock_calls[0]
-        self.assertEqual(len(self.con.send_text.mock_calls), 1)
-
-        mock_call = self.con.send_text.mock_calls[0]
-        self.assertEqual(mock_call.args[0], message.to_str())
+        self.assertEqual(expected.to_str(), self.con1.send_text.mock_calls[0].args[0])
+        self.assertEqual(expected.to_str(), self.con2.send_text.mock_calls[0].args[0])
 
     async def test_handle_message(self):
         mock = AsyncMock()
         EventBroker.add_receiver("example")(mock)
 
-        message = Message(event="example", payload=TilesPayload(
-            0, 0, 0, 0, "abcdefg"
-        ))
+        conn_id = "haha this is some random conn id"
+        message = Message(event="example",
+                          header={"sender": conn_id},
+                          payload=TilesPayload(
+                              0, 0, 0, 0, "abcdefg"
+                          ))
 
         await ConnectionManager.handle_message(message=message)
-
-        conn_id = "haha this is some random conn id"
-
-        await ConnectionManager.handle_message(message=message, conn_id=conn_id)
 
         self.assertEqual(len(mock.mock_calls), 1)
 
