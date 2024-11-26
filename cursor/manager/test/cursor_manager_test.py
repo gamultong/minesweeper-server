@@ -54,43 +54,19 @@ class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
 class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         # 기존 my-cursor 리시버 비우기 및 mock으로 대체
-        self.my_cursor_receivers = []
-        if NewConnEvent.MY_CURSOR in EventBroker.event_dict:
-            self.my_cursor_receivers = EventBroker.event_dict[NewConnEvent.MY_CURSOR].copy()
+        self.multicast_receivers = []
+        if "multicast" in EventBroker.event_dict:
+            self.multicast_receivers = EventBroker.event_dict["multicast"].copy()
 
-        EventBroker.event_dict[NewConnEvent.MY_CURSOR] = []
+        EventBroker.event_dict["multicast"] = []
 
-        self.mock_my_cursor_func = AsyncMock()
-        self.mock_my_cursor_receiver = EventBroker.add_receiver(event=NewConnEvent.MY_CURSOR)(func=self.mock_my_cursor_func)
-
-        # 기존 nearby-cursor 리시버 비우기 및 mock으로 대체
-        self.nearby_cursor_receivers = []
-        if NewConnEvent.NEARYBY_CURSORS in EventBroker.event_dict:
-            self.nearby_cursor_receivers = EventBroker.event_dict[NewConnEvent.NEARYBY_CURSORS].copy()
-
-        EventBroker.event_dict[NewConnEvent.NEARYBY_CURSORS] = []
-
-        self.mock_nearby_cursor_func = AsyncMock()
-        self.mock_nearby_cursor_receiver = EventBroker.add_receiver(event=NewConnEvent.NEARYBY_CURSORS)(func=self.mock_nearby_cursor_func)
-
-        # 기존 cursor-appeared 리시버 비우기 및 mock으로 대체
-        self.cursor_appeared_receivers = []
-        if NewConnEvent.CURSOR_APPEARED in EventBroker.event_dict:
-            self.cursor_appeared_receivers = EventBroker.event_dict[NewConnEvent.CURSOR_APPEARED].copy()
-
-        EventBroker.event_dict[NewConnEvent.CURSOR_APPEARED] = []
-
-        self.mock_cursor_appeared_func = AsyncMock()
-        self.mock_cursor_appeared_receiver = EventBroker.add_receiver(event=NewConnEvent.CURSOR_APPEARED)(func=self.mock_cursor_appeared_func)
+        self.mock_multicast_func = AsyncMock()
+        self.mock_multicast_receiver = EventBroker.add_receiver(event="multicast")(func=self.mock_multicast_func)
 
     def tearDown(self):
         # 리시버 정상화
-        EventBroker.remove_receiver(self.mock_my_cursor_receiver)
-        EventBroker.event_dict[NewConnEvent.MY_CURSOR] = self.my_cursor_receivers
-        EventBroker.remove_receiver(self.mock_nearby_cursor_receiver)
-        EventBroker.event_dict[NewConnEvent.NEARYBY_CURSORS] = self.nearby_cursor_receivers
-        EventBroker.remove_receiver(self.mock_cursor_appeared_receiver)
-        EventBroker.event_dict[NewConnEvent.CURSOR_APPEARED] = self.cursor_appeared_receivers
+        EventBroker.remove_receiver(self.mock_multicast_receiver)
+        EventBroker.event_dict["multicast"] = self.multicast_receivers
 
         CursorManager.cursor_dict = {}
 
@@ -112,11 +88,11 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
 
         await CursorManager.receive_new_conn(message)
 
-        self.assertEqual(len(self.mock_my_cursor_func.mock_calls), 1)
-        got = self.mock_my_cursor_func.mock_calls[0].args[0]
+        self.assertEqual(len(self.mock_multicast_func.mock_calls), 3)
+        got = self.mock_multicast_func.mock_calls[0].args[0]
 
         assert type(got) == Message
-        assert got.event == NewConnEvent.MY_CURSOR
+        assert got.event == "multicast"
 
         assert "target_conns" in got.header
         assert len(got.header["target_conns"]) == 1
@@ -143,31 +119,29 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
 
         await CursorManager.receive_new_conn(message)
 
-        self.assertEqual(len(self.mock_my_cursor_func.mock_calls), 1)
-        got = self.mock_my_cursor_func.mock_calls[0].args[0]
+        self.assertEqual(len(self.mock_multicast_func.mock_calls), 3)
+        got = self.mock_multicast_func.mock_calls[0].args[0]
 
         assert type(got) == Message
-        assert got.event == NewConnEvent.MY_CURSOR
+        assert got.event == "multicast"
 
         assert "target_conns" in got.header
         assert len(got.header["target_conns"]) == 1
         assert got.header["target_conns"][0] == expected_conn_id
 
-        self.assertEqual(len(self.mock_nearby_cursor_func.mock_calls), 1)
-        got = self.mock_nearby_cursor_func.mock_calls[0].args[0]
+        got = self.mock_multicast_func.mock_calls[1].args[0]
 
         assert type(got) == Message
-        assert got.event == NewConnEvent.NEARYBY_CURSORS
+        assert got.event == "multicast"
 
         assert "target_conns" in got.header
         assert len(got.header["target_conns"]) == 1
         assert got.header["target_conns"][0] == expected_conn_id
 
-        self.assertEqual(len(self.mock_cursor_appeared_func.mock_calls), 1)
-        got = self.mock_cursor_appeared_func.mock_calls[0].args[0]
+        got = self.mock_multicast_func.mock_calls[2].args[0]
 
         assert type(got) == Message
-        assert got.event == NewConnEvent.CURSOR_APPEARED
+        assert got.event == "multicast"
 
         assert "target_conns" in got.header
         assert len(got.header["target_conns"]) == len(CursorManager.cursor_dict)
