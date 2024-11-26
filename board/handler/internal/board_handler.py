@@ -1,5 +1,5 @@
 from event import EventBroker
-from board import Board
+from board import Board, Point
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent
 
@@ -13,10 +13,10 @@ class BoardHandler():
         resp_message = Message(
             event=TilesEvent.TILES,
             payload=TilesPayload(
-                start_x=message.payload.start_x,
-                start_y=message.payload.start_y,
-                end_x=message.payload.end_x,
-                end_y=message.payload.end_y,
+                start_p=Point(message.payload.start_p.x,
+                    message.payload.start_p.y),
+                end_p=Point(message.payload.end_p.x,
+                    message.payload.end_p.y),
                 tiles=tiles
             )
         )

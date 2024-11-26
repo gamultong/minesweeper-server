@@ -6,6 +6,7 @@ from event import EventBroker
 from message import Message
 from message.payload import FetchTilesPayload, TilesEvent, TilesPayload
 from board.test.fixtures import setup_board
+from board import Point
 
 
 class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
@@ -31,7 +32,7 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_receive_message(self):
         message = Message(
             event=TilesEvent.FETCH_TILES,
-            payload=FetchTilesPayload(-2, 1, 1, -2)
+            payload=FetchTilesPayload(Point(-2, 1), Point(1, -2))
         )
 
         await BoardHandler.receive_fetch_tiles_event(message)
@@ -43,10 +44,10 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         assert got.event == TilesEvent.TILES
 
         assert type(got.payload) == TilesPayload
-        assert got.payload.start_x == -2
-        assert got.payload.start_y == 1
-        assert got.payload.end_x == 1
-        assert got.payload.end_y == -2
+        assert got.payload.start_p.x == -2
+        assert got.payload.start_p.y == 1
+        assert got.payload.end_p.x == 1
+        assert got.payload.end_p.y == -2
         assert got.payload.tiles == "df12df12er56er56"
 
 

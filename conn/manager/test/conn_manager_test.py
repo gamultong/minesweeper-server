@@ -8,6 +8,7 @@ from message import Message
 from message.payload import TilesPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
+from board import Point
 
 class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -49,7 +50,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         _ = await ConnectionManager.add(self.con)
         
         message = Message(event="tiles", payload=TilesPayload(
-            0,0,0,0,"abcdefg"
+            Point(0,0), Point(0,0),"abcdefg"
         ))
         
         await EventBroker.publish(message)
@@ -64,7 +65,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         EventBroker.add_receiver("example")(mock)
         
         message = Message(event="example", payload=TilesPayload(
-            0,0,0,0,"abcdefg"
+            Point(0,0),Point(0,0),"abcdefg"
         ))
           
         await ConnectionManager.handle_message(message=message)
