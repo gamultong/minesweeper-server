@@ -31,7 +31,7 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_receive_fetch_tiles(self):
         message = Message(
             event=TilesEvent.FETCH_TILES,
-            payload=FetchTilesPayload(Point(-2, 1), Point(1, -2))
+            payload=FetchTilesPayload(Point(-2, 1), Point(1, -2)),
             header={"sender": "ayo"},
 
         )
