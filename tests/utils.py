@@ -9,7 +9,6 @@ def cases(case_list):
 
 
 def singleton_mock_setup(singleton_obj, mock, globals):
-    from pprint import pprint
     origin_object = singleton_obj
     globals[singleton_obj.__name__] = mock
     return origin_object
