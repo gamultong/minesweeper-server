@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock
 from conn import Conn
 from conn.manager import ConnectionManager
 from message import Message
-from message.payload import TilesPayload
+from message.payload import TilesPayload, NewConnEvent, NewConnPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
 
@@ -14,14 +14,40 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.con = create_connection_mock()
 
+        # 기존 new-conn 리시버 비우기 및 mock으로 대체
+        self.new_conn_receivers = []
+        if NewConnEvent.NEW_CONN in EventBroker.event_dict:
+            self.new_conn_receivers = EventBroker.event_dict[NewConnEvent.NEW_CONN].copy()
+
+        EventBroker.event_dict[NewConnEvent.NEW_CONN] = []
+
+        self.mock_new_conn_func = AsyncMock()
+        self.mock_new_conn_receiver = EventBroker.add_receiver(NewConnEvent.NEW_CONN)(func=self.mock_new_conn_func)
+
     def tearDown(self):
         ConnectionManager.conns = {}
 
+        # 리시버 정상화
+        EventBroker.remove_receiver(self.mock_new_conn_receiver)
+        EventBroker.event_dict[NewConnEvent.NEW_CONN] = self.new_conn_receivers
+
     async def test_add(self):
-        con_obj = await ConnectionManager.add(self.con)
+        width = 1
+        height = 1
+
+        con_obj = await ConnectionManager.add(self.con, width, height)
         assert type(con_obj) == Conn
 
         assert ConnectionManager.get_conn(con_obj.id).id == con_obj.id
+
+        assert len(self.mock_new_conn_func.mock_calls) == 1
+
+        got = self.mock_new_conn_func.mock_calls[0].args[0]
+        assert type(got) == Message
+        assert type(got.payload) == NewConnPayload
+        assert got.payload.conn_id == con_obj.id
+        assert got.payload.width == width
+        assert got.payload.height == height
 
     def test_get_conn(self):
         valid_id = "abc"
@@ -38,7 +64,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         conn_ids = [None] * n_conns
 
         for idx, conn in enumerate(conns):
-            conn_obj = await ConnectionManager.add(conn=conn)
+            conn_obj = await ConnectionManager.add(conn=conn, width=1, height=1)
             conn_ids[idx] = conn_obj.id
 
         for id in conn_ids:
@@ -47,7 +73,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
             uuid.UUID(id)
 
     async def test_receive_tiles_event(self):
-        _ = await ConnectionManager.add(self.con)
+        _ = await ConnectionManager.add(self.con, 1, 1)
 
         message = Message(event="tiles", payload=TilesPayload(
             0, 0, 0, 0, "abcdefg"

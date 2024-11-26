@@ -1,7 +1,7 @@
 from fastapi.websockets import WebSocket
 from conn import Conn
 from message import Message
-from message.payload import TilesPayload
+from message.payload import TilesPayload, NewConnEvent, NewConnPayload
 from event import EventBroker
 from uuid import uuid4
 
@@ -16,12 +16,23 @@ class ConnectionManager:
         return None
 
     @staticmethod
-    async def add(conn: WebSocket) -> Conn:
+    async def add(conn: WebSocket, width: int, height: int) -> Conn:
         id = ConnectionManager.generate_conn_id()
 
         conn_obj = Conn(id=id, conn=conn)
         await conn_obj.accept()
         ConnectionManager.conns[id] = conn_obj
+
+        message = Message(
+            event=NewConnEvent.NEW_CONN,
+            payload=NewConnPayload(
+                conn_id=id,
+                height=height,
+                width=width
+            )
+        )
+
+        await EventBroker.publish(message)
 
         return conn_obj
 
