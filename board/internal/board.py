@@ -33,7 +33,8 @@ class Board:
         fetched = None
         for sec_y in range(start.y // Section.LENGTH, end.y // Section.LENGTH - 1, - 1):
             for sec_x in range(start.x // Section.LENGTH, end.x // Section.LENGTH + 1):
-                section = Board.sections[sec_y][sec_x]
+                # TODO: 임시로 기존 맵 돌려쓰도록 만듦. **나중에 삭제**
+                section = Board.sections[sec_y % -len(Board.sections)][sec_x % -len(Board.sections)]
 
                 start_p = Point(
                     x=max(start.x, section.abs_x) - (section.abs_x),
