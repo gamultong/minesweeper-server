@@ -36,13 +36,16 @@ class Board:
                 # TODO: 임시로 기존 맵 돌려쓰도록 만듦. **나중에 삭제**
                 section = Board.sections[sec_y % -len(Board.sections)][sec_x % -len(Board.sections)]
 
+                abs_sec_x = sec_x * Section.LENGTH
+                abs_sec_y = sec_y * Section.LENGTH
+
                 start_p = Point(
-                    x=max(start.x, section.abs_x) - (section.abs_x),
-                    y=min(start.y, section.abs_y + Section.LENGTH-1) - section.abs_y
+                    x=max(start.x, abs_sec_x) - (abs_sec_x),
+                    y=min(start.y, abs_sec_y + Section.LENGTH-1) - abs_sec_y
                 )
                 end_p = Point(
-                    x=min(end.x, section.abs_x + Section.LENGTH-1) - section.abs_x,
-                    y=max(end.y, section.abs_y) - section.abs_y
+                    x=min(end.x, abs_sec_x + Section.LENGTH-1) - abs_sec_x,
+                    y=max(end.y, abs_sec_y) - abs_sec_y
                 )
                 
                 fetched = section.fetch(start=start_p, end=end_p)
