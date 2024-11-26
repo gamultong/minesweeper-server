@@ -78,10 +78,10 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         assert got.header["target_conns"][0] == message.header["sender"]
 
         assert type(got.payload) == TilesPayload
-        assert got.payload.start_x == -2
-        assert got.payload.start_y == 2
-        assert got.payload.end_x == 2
-        assert got.payload.end_y == -2
+        assert got.payload.start_p.x == -2
+        assert got.payload.start_p.y == 2
+        assert got.payload.end_p.x == 2
+        assert got.payload.end_p.y == -2
         assert got.payload.tiles == "df123df123df123er567er567"
 
 
