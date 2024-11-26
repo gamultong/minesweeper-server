@@ -39,7 +39,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         width = 1
         height = 1
 
-        con_obj = await ConnectionManager.add(self.con, width, height)
+        con_obj = await ConnectionManager.add(self.con1, width, height)
         assert type(con_obj) == Conn
 
         assert ConnectionManager.get_conn(con_obj.id).id == con_obj.id
@@ -76,12 +76,11 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
             # UUID 포맷인지 확인. 아니면 ValueError
             uuid.UUID(id)
 
-    async def test_receive_tiles_event(self):
+    async def test_receive_broadcast_event(self):
         _ = await ConnectionManager.add(self.con1, 1, 1)
         _ = await ConnectionManager.add(self.con2, 1, 1)
         _ = await ConnectionManager.add(self.con3, 1, 1)
         _ = await ConnectionManager.add(self.con4, 1, 1)
-      
 
         origin_event = "ayo"
 
@@ -102,10 +101,10 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(expected.to_str(), self.con4.send_text.mock_calls[0].args[0])
 
     async def test_receive_multicast_event(self):
-        con1 = await ConnectionManager.add(self.con1)
-        con2 = await ConnectionManager.add(self.con2)
-        _ = await ConnectionManager.add(self.con3)
-        _ = await ConnectionManager.add(self.con4)
+        con1 = await ConnectionManager.add(self.con1, 1, 1)
+        con2 = await ConnectionManager.add(self.con2, 1, 1)
+        _ = await ConnectionManager.add(self.con3, 1, 1)
+        _ = await ConnectionManager.add(self.con4, 1, 1)
 
         origin_event = "ayo"
 
