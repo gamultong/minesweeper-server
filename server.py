@@ -22,7 +22,8 @@ async def session(ws: WebSocket):
     while True:
         try:
             msg = await conn.receive()
-            await ConnectionManager.handle_message(msg, conn.id)
+            msg.header = {"sender": conn.id}
+            await ConnectionManager.handle_message(msg)
         except Exception as e:
             print(f"WebSocket connection closed: {e}")
             break

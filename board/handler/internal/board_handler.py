@@ -13,8 +13,9 @@ class BoardHandler():
         tiles = Board.fetch(message.payload.start_p, message.payload.end_p)
 
         resp_message = Message(
-            event=TilesEvent.TILES,
-            header={"target_conns": [sender]},
+            event="multicast",
+            header={"target_conns": [sender],
+                    "origin_event": TilesEvent.TILES},
             payload=TilesPayload(
                 start_x=message.payload.start_x,
                 start_y=message.payload.start_y,
@@ -41,8 +42,9 @@ class BoardHandler():
 
         # TODO: header 추가하기. 위 메서드도
         resp_message = Message(
-            event=TilesEvent.TILES,
-            header={"target_conns": [sender]},
+            event="multicast",
+            header={"target_conns": [sender],
+                    "origin_event": TilesEvent.TILES},
             payload=TilesPayload(
                 start_x=start_p.x,
                 start_y=start_p.y,

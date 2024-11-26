@@ -37,8 +37,9 @@ class CursorManager:
         cursor.set_size(message.payload.width, message.payload.height)
 
         new_cursor_message = Message(
-            event=NewConnEvent.MY_CURSOR,
-            header={"target_conns": [cursor.conn_id]},
+            event="multicast",
+            header={"target_conns": [cursor.conn_id],
+                    "origin_event": NewConnEvent.MY_CURSOR},
             payload=NewCursorPayload(
                 position=cursor.position,
                 pointer=cursor.pointer,
@@ -60,8 +61,9 @@ class CursorManager:
         cursors_in_range = CursorManager.exists_range(start_p, end_p)
         if len(cursors_in_range) > 0:
             nearby_cursors_message = Message(
-                event=NewConnEvent.NEARYBY_CURSORS,
-                header={"target_conns": [message.payload.conn_id]},
+                event="multicast",
+                header={"target_conns": [message.payload.conn_id],
+                        "origin_event": NewConnEvent.NEARYBY_CURSORS},
                 payload=NearbyCursorPayload(
                     cursors=[
                         CursorPayload(c.position, c.pointer, c.color) for c in cursors_in_range
@@ -74,8 +76,9 @@ class CursorManager:
         cursors_with_view_including = CursorManager.view_includes(cursor.position)
         if len(cursors_with_view_including) > 0:
             cursor_appeared_message = Message(
-                event=NewConnEvent.CURSOR_APPEARED,
-                header={"target_conns": [cursor.conn_id for cursor in cursors_with_view_including]},
+                event="multicast",
+                header={"target_conns": [cursor.conn_id for cursor in cursors_with_view_including],
+                        "origin_event": NewConnEvent.CURSOR_APPEARED},
                 payload=CursorAppearedPayload(
                     position=cursor.position,
                     pointer=cursor.pointer,
