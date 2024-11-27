@@ -4,7 +4,7 @@ from .fixtures import create_connection_mock
 from dataclasses import dataclass
 from message.payload import Payload
 from message import Message
-from message.internal.message import PAYLOAD_DICT
+from message.internal.message import DECODABLE_PAYLOAD_DICT
 from conn import Conn
 
 
@@ -20,10 +20,10 @@ class ConnectionTestCase(unittest.IsolatedAsyncioTestCase):
         self.conn = create_connection_mock()
         self.conn_obj = Conn.create(self.id, self.conn)
 
-        PAYLOAD_DICT["example"] = ExamplePayload
+        DECODABLE_PAYLOAD_DICT["example"] = ExamplePayload
 
     def tearDown(self):
-        del PAYLOAD_DICT["example"]
+        del DECODABLE_PAYLOAD_DICT["example"]
         return super().tearDown()
 
     def test_create(self):

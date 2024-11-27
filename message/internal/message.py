@@ -1,5 +1,5 @@
 from typing import Generic, TypeVar
-from message.payload import Payload, FetchTilesPayload, TilesPayload
+from message.payload import Payload, FetchTilesPayload, TilesPayload, PointingPayload
 from .exceptions import InvalidEventTypeException
 
 import json
@@ -9,9 +9,10 @@ EVENT_TYPE = TypeVar(
     bound=Payload
 )
 
-PAYLOAD_DICT: dict[str, Payload] = {
+DECODABLE_PAYLOAD_DICT: dict[str, Payload] = {
     "fetch-tiles": FetchTilesPayload,
-    "tiles": TilesPayload
+    "tiles": TilesPayload,
+    "pointing": PointingPayload
 }
 
 
@@ -51,7 +52,7 @@ def decode_data(event: str, data: dict):
     """
     data를 Payload로 decode
     """
-    if not event in PAYLOAD_DICT:
+    if not event in DECODABLE_PAYLOAD_DICT:
         raise InvalidEventTypeException(event)
 
-    return PAYLOAD_DICT[event]._from_dict(data)
+    return DECODABLE_PAYLOAD_DICT[event]._from_dict(data)
