@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayload, CursorAppearedPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointEvent
+from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayload, CursorAppearedPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
 
 
 class CursorManager:
@@ -134,6 +134,8 @@ class CursorManager:
             # TODO: 예외 처리?
             pass
 
+        cursor.new_pointer = new_pointer
+
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": sender},
@@ -142,6 +144,31 @@ class CursorManager:
                 new_pointer=new_pointer,
                 color=cursor.color,
                 click_type=message.payload.click_type
+            )
+        )
+
+        await EventBroker.publish(message)
+
+    @EventBroker.add_receiver(PointEvent.POINTING_RESULT)
+    @staticmethod
+    async def receive_pointing_result(message: Message[PointingResultPayload]):
+        receiver = message.header["receiver"]
+
+        cursor = CursorManager.cursor_dict[receiver]
+
+        new_pointer = cursor.new_pointer if message.payload.pointable else None
+        origin_pointer = cursor.pointer
+
+        cursor.pointer = new_pointer
+        cursor.new_pointer = None
+
+        message = Message(
+            event=PointEvent.POINTER_SET,
+            header={"target_conns": [cursor.conn_id]},
+            payload=PointerSetPayload(
+                origin_position=origin_pointer,
+                new_position=new_pointer,
+                color=cursor.color,
             )
         )
 
