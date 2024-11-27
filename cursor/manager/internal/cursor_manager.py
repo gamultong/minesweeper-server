@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayload, CursorAppearedPayload, CursorPayload, NewConnEvent
+from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayload, CursorAppearedPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointEvent
 
 
 class CursorManager:
@@ -113,3 +113,36 @@ class CursorManager:
             )
 
             await EventBroker.publish(cursor_appeared_message)
+
+    @EventBroker.add_receiver(PointEvent.POINTING)
+    @staticmethod
+    async def receive_pointing(message: Message[PointingPayload]):
+        sender = message.header["sender"]
+
+        cursor = CursorManager.cursor_dict[sender]
+        new_pointer = message.payload.position
+
+        # 뷰 바운더리 안에서 포인팅하는지 확인
+        left_up_edge = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
+        right_down_edge = Point(cursor.position.x + cursor.width, cursor.position.y - cursor.height)
+
+        if \
+                new_pointer.x < left_up_edge.x or \
+                new_pointer.x > right_down_edge.x or \
+                new_pointer.y > left_up_edge.y or \
+                new_pointer.y < right_down_edge.y:
+            # TODO: 예외 처리?
+            pass
+
+        message = Message(
+            event=PointEvent.TRY_POINTING,
+            header={"sender": sender},
+            payload=TryPointingPayload(
+                cursor_position=cursor.position,
+                new_pointer=new_pointer,
+                color=cursor.color,
+                click_type=message.payload.click_type
+            )
+        )
+
+        await EventBroker.publish(message)
