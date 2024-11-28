@@ -5,7 +5,7 @@ from random import randint
 class Color(str, Enum):
     RED = "RED"
     YELLOW = "YELLOW"
-    GREEN = "GREEN"
+    PURPLE = "PURPLE"
     BLUE = "BLUE"
 
     @staticmethod
