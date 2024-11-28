@@ -14,8 +14,8 @@ class PointEvent(Enum):
 
 
 class ClickType(Enum):
-    GENERAL_CLICK = "left"
-    SPECIAL_CLICK = "right"
+    GENERAL_CLICK = "GENERAL_CLICK"
+    SPECIAL_CLICK = "SPECIAL_CLICK"
 
 
 @dataclass
