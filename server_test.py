@@ -69,7 +69,7 @@ class ServerTestCase(unittest.TestCase):
 
             response = websocket.receive_text()
 
-            assert response == expect.to_str()
+            self.assertEqual(response, expect.to_str())
 
         # 리시버 정상화
         EventBroker.remove_receiver(self.mock_new_conn_receiver)

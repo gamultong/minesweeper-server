@@ -1,50 +1,62 @@
 import unittest
-from unittest.mock import AsyncMock
-
+from unittest.mock import AsyncMock, patch
 from board.handler import BoardHandler
-from event import EventBroker
 from message import Message
-from message.payload import FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType
-
+from message.payload import \
+    FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType
 from board.test.fixtures import setup_board
 from board import Point
-
 from cursor import Color
-from event.internal.event_broker import Receiver
 
 
-class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
+"""
+BoardHandler Test
+----------------------------
+Test
+❌ ✅
+- fetch-tiles-receiver
+    - ✅| normal-case
+    - ❌| invaild-message
+        - ❌| invaild-message-payload
+        - ❌| no-sender
+        - ❌| invaild-header
+- new-conn-receiver
+    - ✅| normal-case
+- try-pointing-receiver
+    - ✅| normal-case
+"""
+
+
+# fetch-tiles-receiver Test
+class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
+
     def setUp(self):
         setup_board()
 
-        # 기존 tiles 리시버 비우기 및 mock으로 대체
-        self.multi_receivers = []
-        if "multicast" in EventBroker.event_dict:
-            self.multi_receivers = EventBroker.event_dict["multicast"].copy()
+    @patch("event.EventBroker.publish")
+    async def test_fetch_tiles_receiver_normal_case(self, mock: AsyncMock):
+        """
+        fetch-tiles-receiver 
+        normal-case
+        ----------------------------
+        trigger event ->
+            - fetch-tiles : message[FetchTilesPayload]
+                - header : 
+                    - sender : conn_id
+                - descrption :
+                   econn_id의 tiles 정보 요청
+        ----------------------------
+        publish event ->
+            - multicast : message[TilesPayload]
+                - header :
+                    - target_conns : [conn_id]
+                    - origin_event : tiles
+                - descrption :
+                   fetch-tiles의 대한 응답
+        ----------------------------
+        """
 
-        EventBroker.event_dict["multicast"] = []
-
-        self.mock_multicast_func = AsyncMock()
-        self.mock_multicast_receiver = EventBroker.add_receiver("multicast")(func=self.mock_multicast_func)
-
-        self.pointing_result_receivers = []
-        if PointEvent.POINTING_RESULT in EventBroker.event_dict:
-            self.pointing_result_receivers = EventBroker.event_dict[PointEvent.POINTING_RESULT].copy()
-
-        EventBroker.event_dict[PointEvent.POINTING_RESULT] = []
-
-        self.mock_pointing_result_func = AsyncMock()
-        self.mock_pointing_result_receiver = EventBroker.add_receiver(PointEvent.POINTING_RESULT)(func=self.mock_pointing_result_func)
-
-    def tearDown(self):
-        # 리시버 정상화
-        EventBroker.remove_receiver(self.mock_multicast_receiver)
-        EventBroker.event_dict["multicast"] = self.multi_receivers
-
-        EventBroker.remove_receiver(self.mock_pointing_result_receiver)
-        EventBroker.event_dict[PointEvent.POINTING_RESULT] = self.pointing_result_receivers
-
-    async def test_receive_fetch_tiles(self):
+        # trigger message 생성
         message = Message(
             event=TilesEvent.FETCH_TILES,
             payload=FetchTilesPayload(Point(-2, 1), Point(1, -2)),
@@ -52,29 +64,34 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
 
         )
 
+        # trigger event
         await BoardHandler.receive_fetch_tiles(message)
 
-        self.assertEqual(len(self.mock_multicast_func.mock_calls), 1)
-        got = self.mock_multicast_func.mock_calls[0].args[0]
+        # 호출 여부
+        mock.assert_called_once()
+        got: Message[TilesPayload] = mock.mock_calls[0].args[0]
 
-        assert type(got) == Message
-        assert got.event == "multicast"
-
-        assert "target_conns" in got.header
-        assert len(got.header["target_conns"]) == 1
-        assert got.header["target_conns"][0] == message.header["sender"]
-
+        # message 확인
+        self.assertEqual(type(got), Message)
+        # message.event
+        self.assertEqual(got.event, "multicast")
+        # message.header
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertEqual(got.header["target_conns"][0], message.header["sender"])
         self.assertIn("origin_event", got.header)
         self.assertEqual(got.header["origin_event"], TilesEvent.TILES)
 
-        assert type(got.payload) == TilesPayload
-        assert got.payload.start_p.x == -2
-        assert got.payload.start_p.y == 1
-        assert got.payload.end_p.x == 1
-        assert got.payload.end_p.y == -2
-        assert got.payload.tiles == "df12df12er56er56"
+        # message.payload
+        self.assertEqual(type(got.payload), TilesPayload)
+        self.assertEqual(got.payload.start_p.x, -2)
+        self.assertEqual(got.payload.start_p.y, 1)
+        self.assertEqual(got.payload.end_p.x, 1)
+        self.assertEqual(got.payload.end_p.y, -2)
+        self.assertEqual(got.payload.tiles, "df12df12er56er56")
 
-    async def test_receive_new_conn(self):
+    @patch("event.EventBroker.publish")
+    async def test_receive_new_conn(self, mock: AsyncMock):
         message = Message(
             event=NewConnEvent.NEW_CONN,
             header={"sender": "ayo"},
@@ -83,24 +100,25 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
 
         await BoardHandler.receive_new_conn(message)
 
-        self.assertEqual(len(self.mock_multicast_func.mock_calls), 1)
-        got = self.mock_multicast_func.mock_calls[0].args[0]
+        mock.assert_called_once()
+        got: Message[TilesPayload] = mock.mock_calls[0].args[0]
 
-        assert type(got) == Message
-        assert got.event == "multicast"
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
 
-        assert "target_conns" in got.header
-        assert len(got.header["target_conns"]) == 1
-        assert got.header["target_conns"][0] == message.header["sender"]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertEqual(got.header["target_conns"][0], message.header["sender"])
 
-        assert type(got.payload) == TilesPayload
-        assert got.payload.start_p.x == -2
-        assert got.payload.start_p.y == 2
-        assert got.payload.end_p.x == 2
-        assert got.payload.end_p.y == -2
-        assert got.payload.tiles == "df123df123df123er567er567"
+        self.assertEqual(type(got.payload), TilesPayload)
+        self.assertEqual(got.payload.start_p.x, -2)
+        self.assertEqual(got.payload.start_p.y, 2)
+        self.assertEqual(got.payload.end_p.x, 2)
+        self.assertEqual(got.payload.end_p.y, -2)
+        self.assertEqual(got.payload.tiles, "df123df123df123er567er567")
 
-    async def test_try_pointing(self):
+    @ patch("event.EventBroker.publish")
+    async def test_try_pointing(self, mock: AsyncMock):
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": "ayo"},
@@ -114,19 +132,18 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
 
         await BoardHandler.receive_try_pointing(message)
 
-        mock = self.mock_pointing_result_func
-        self.assertEqual(len(mock.mock_calls), 1)
-        self.assertEqual(len(mock.mock_calls[0].args), 1)
+        mock.assert_called_once()
+        got: Message[PointingResultPayload] = mock.mock_calls[0].args[0]
 
-        message: Message[PointingResultPayload] = mock.mock_calls[0].args[0]
-        self.assertEqual(message.event, PointEvent.POINTING_RESULT)
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, PointEvent.POINTING_RESULT)
 
-        self.assertEqual(len(message.header), 1)
-        self.assertIn("receiver", message.header)
-        self.assertEqual(message.header["receiver"], "ayo")
+        self.assertEqual(len(got.header), 1)
+        self.assertIn("receiver", got.header)
+        self.assertEqual(got.header["receiver"], "ayo")
 
-        self.assertEqual(type(message.payload), PointingResultPayload)
-        self.assertEqual(message.payload.pointable, False)
+        self.assertEqual(type(got.payload), PointingResultPayload)
+        self.assertEqual(got.payload.pointable, False)
 
 
 if __name__ == "__main__":

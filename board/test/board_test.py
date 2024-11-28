@@ -43,7 +43,7 @@ class BoardTestCase(unittest.TestCase):
 
         data = Board.fetch(start_p, end_p)
 
-        assert data == expect, f"{data} {expect}"
+        self.assertEqual(data,  expect)
 
 
 if __name__ == "__main__":

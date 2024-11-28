@@ -10,24 +10,24 @@ class BasePayloadTestCase(unittest.TestCase):
     def test_from_dict(self):
         payload = ExamplePayload._from_dict(dict=EXAMPLE_PAYLOAD_DICT)
 
-        assert payload.foo == "foo"
-        assert payload.bar == "bar"
+        self.assertEqual(payload.foo, "foo")
+        self.assertEqual(payload.bar, "bar")
 
     def test_from_dict_wrapped(self):
         payload = ExampleWrapperPayload._from_dict(dict=EXAMPLE_PAYLOAD_WRAPPED_DICT)
 
-        assert payload.a == 1
-        assert payload.b == "b"
+        self.assertEqual(payload.a, 1)
+        self.assertEqual(payload.b, "b")
 
-        assert payload.wrapped.foo == "foo"
-        assert payload.wrapped.bar == "bar"
+        self.assertEqual(payload.wrapped.foo, "foo")
+        self.assertEqual(payload.wrapped.bar, "bar")
 
     @cases(EXCEPTION_TEST_CASES)
     def test_from_dict_wrongs(self, dict, payload, exp, msg):
         with self.assertRaises(exp) as cm:
             payload._from_dict(dict=dict)
 
-        assert cm.exception.msg == msg
+        self.assertEqual(cm.exception.msg, msg)
 
 
 if __name__ == "__main__":

@@ -73,7 +73,7 @@ class BoardHandler():
         pointable = tiles.find("O") != -1
 
         await EventBroker.publish(
-            message=Message(
+            Message(
                 event=PointEvent.POINTING_RESULT,
                 header={"receiver": sender},
                 payload=PointingResultPayload(

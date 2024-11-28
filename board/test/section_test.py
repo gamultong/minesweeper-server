@@ -55,10 +55,10 @@ class SectionTestCase(unittest.TestCase):
             data=EXAPMLE_SECTION_DATA
         )
 
-        assert self.section.p == EXAMPLE_POINT
+        self.assertEqual(self.section.p, EXAMPLE_POINT)
 
         data_length = sum(len(row) for row in self.section.data)
-        assert data_length == Section.LENGTH ** 2, data_length
+        self.assertEqual(data_length, Section.LENGTH ** 2)
 
     @cases(FETCH_TEST_CASES)
     def test_fetch(self, desc, range, expect):
@@ -71,7 +71,7 @@ class SectionTestCase(unittest.TestCase):
         if end is not None:
             data = bytearray().join(data)
 
-        assert data.decode('ascii') == expect, f"desc: {desc}, {data}, {expect}"
+        self.assertEqual(data.decode('ascii'), expect, desc)
 
     def test_fetch_out_of_range(self):
         pass
@@ -93,7 +93,7 @@ class SectionTestCase(unittest.TestCase):
         self.section.update(data=value, start=EXAMPLE_POINT)
 
         got = self.section.fetch(start=EXAMPLE_POINT)
-        assert got == value, f"{type(got)} {got} {value}"
+        self.assertEqual(got, value)
 
     def test_update_range(self):
         rows = 3
@@ -107,7 +107,7 @@ class SectionTestCase(unittest.TestCase):
         self.section.update(data=value, start=start, end=end)
 
         got = self.section.fetch(start=start, end=end)
-        assert got == value, f"{got} {value}"
+        self.assertEqual(got, value)
 
 
 if __name__ == "__main__":

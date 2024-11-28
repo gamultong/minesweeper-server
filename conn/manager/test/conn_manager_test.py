@@ -41,26 +41,26 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         height = 1
 
         con_obj = await ConnectionManager.add(self.con1, width, height)
-        assert type(con_obj) == Conn
+        self.assertEqual(type(con_obj), Conn)
 
-        assert ConnectionManager.get_conn(con_obj.id).id == con_obj.id
+        self.assertEqual(ConnectionManager.get_conn(con_obj.id).id, con_obj.id)
 
-        assert len(self.mock_new_conn_func.mock_calls) == 1
+        self.assertEqual(len(self.mock_new_conn_func.mock_calls), 1)
 
         got = self.mock_new_conn_func.mock_calls[0].args[0]
-        assert type(got) == Message
-        assert type(got.payload) == NewConnPayload
-        assert got.payload.conn_id == con_obj.id
-        assert got.payload.width == width
-        assert got.payload.height == height
+        self.assertEqual(type(got), Message)
+        self.assertEqual(type(got.payload), NewConnPayload)
+        self.assertEqual(got.payload.conn_id, con_obj.id)
+        self.assertEqual(got.payload.width, width)
+        self.assertEqual(got.payload.height, height)
 
     def test_get_conn(self):
         valid_id = "abc"
         invalid_id = "abcdef"
         ConnectionManager.conns[valid_id] = Conn(valid_id, create_connection_mock())
 
-        assert ConnectionManager.get_conn(valid_id) is not None
-        assert ConnectionManager.get_conn(invalid_id) is None
+        self.assertIsNotNone(ConnectionManager.get_conn(valid_id))
+        self.assertIsNone(ConnectionManager.get_conn(invalid_id))
 
     async def test_generate_conn_id(self):
         n_conns = 5
@@ -73,10 +73,9 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
             conn_ids[idx] = conn_obj.id
 
         for id in conn_ids:
-            assert conn_ids.count(id) == 1
+            self.assertEqual(conn_ids.count(id), 1)
             # UUID 포맷인지 확인. 아니면 ValueError
             uuid.UUID(id)
-
 
     async def test_receive_broadcast_event(self):
         _ = await ConnectionManager.add(self.con1, 1, 1)
@@ -139,7 +138,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         message = Message(event="example",
                           header={"sender": conn_id},
                           payload=TilesPayload(
-                              Point(0,0),Point(0,0),"abcdefg"
+                              Point(0, 0), Point(0, 0), "abcdefg"
                           ))
 
         await ConnectionManager.handle_message(message=message)

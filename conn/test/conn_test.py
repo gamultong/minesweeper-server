@@ -27,24 +27,24 @@ class ConnectionTestCase(unittest.IsolatedAsyncioTestCase):
         return super().tearDown()
 
     def test_create(self):
-        assert self.conn_obj.id == self.id
-        assert self.conn_obj.conn == self.conn
+        self.assertEqual(self.conn_obj.id, self.id)
+        self.assertEqual(self.conn_obj.conn, self.conn)
 
     async def test_accept(self):
         await self.conn_obj.accept()
 
-        assert len(self.conn.accept.mock_calls) == 1
+        self.assertEqual(len(self.conn.accept.mock_calls), 1)
 
     async def test_close(self):
         await self.conn_obj.close()
-        assert len(self.conn.close.mock_calls) == 1
+        self.assertEqual(len(self.conn.close.mock_calls), 1)
 
     async def test_send(self):
         msg = Message("example", payload=ExamplePayload(a=0))
         await self.conn_obj.send(msg)
 
-        assert len(self.conn.send_text.mock_calls) == 1
-        assert self.conn.send_text.mock_calls[0].args[0] == msg.to_str()
+        self.assertEqual(len(self.conn.send_text.mock_calls), 1)
+        self.assertEqual(self.conn.send_text.mock_calls[0].args[0], msg.to_str())
 
     async def test_receive(self):
         msg: Message[ExamplePayload] = Message("example", payload=ExamplePayload(a=0))
@@ -53,6 +53,6 @@ class ConnectionTestCase(unittest.IsolatedAsyncioTestCase):
 
         got = await self.conn_obj.receive()
 
-        assert len(self.conn.receive_text.mock_calls) == 1
+        self.assertEqual(len(self.conn.receive_text.mock_calls), 1)
         self.assertEqual(msg.event, got.event)
         self.assertEqual(msg.payload.a, got.payload.a)
