@@ -38,7 +38,7 @@ class PointingResultPayload(Payload):
 
 
 @dataclass
-class PointerSet(ParsablePayload):
-    oringin_position: ParsablePayload[Point]
-    new_position: ParsablePayload[Point]
+class PointerSetPayload(ParsablePayload):
+    origin_position: ParsablePayload[Point] | None
+    new_position: ParsablePayload[Point] | None
     color: Color
