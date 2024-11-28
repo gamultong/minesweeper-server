@@ -1,4 +1,4 @@
-from cursor import Cursor
+from cursor import Cursor, Color
 from cursor.manager import CursorManager
 from event import EventBroker
 from message import Message
@@ -9,15 +9,23 @@ from board import Point
 from warnings import warn
 
 
+def get_cur(conn_id):
+    return Cursor(
+        conn_id=conn_id,
+        position=Point(0, 0),
+        pointer=None,
+        height=10,
+        width=10,
+        color=Color.BLUE
+    )
+
+
 class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.curs_1 = Mock()
-        self.curs_2 = Mock()
-        self.curs_3 = Mock()
         CursorManager.cursor_dict = {
-            "example_1": self.curs_1,
-            "example_2": self.curs_2,
-            "example_3": self.curs_3
+            "example_1": get_cur("example_1"),
+            "example_2": get_cur("example_2"),
+            "example_3": get_cur("example_3")
         }
 
     def tearDown(self):
@@ -39,15 +47,11 @@ class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
     def test_exists_range(self):
         result = CursorManager.exists_range(Point(0, 0), Point(0, 0))
 
-        warn("아직 구현 안됨")
-        # broadcast 기준
         self.assertEqual(len(result), 3)
 
     def test_view_includes(self):
         result = CursorManager.view_includes(Point(0, 0))
 
-        warn("아직 구현 안됨")
-        # broadcast 기준
         self.assertEqual(len(result), 3)
 
 
@@ -99,6 +103,7 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
         assert got.header["target_conns"][0] == expected_conn_id
 
     async def test_receive_new_conn_with_cursors(self):
+
         # TODO: 쿼리 로직 바뀌면 이것도 같이 바꿔야 함.
         CursorManager.cursor_dict = {
             "some id": Cursor.create("some id")
