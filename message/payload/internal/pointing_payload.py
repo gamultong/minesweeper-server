@@ -13,10 +13,15 @@ class PointEvent(Enum):
     POINTER_SET = "pointer-set"
 
 
+class ClickType(Enum):
+    GENERAL_CLICK = "left"
+    SPECIAL_CLICK = "right"
+
+
 @dataclass
 class PointingPayload(Payload):
     position: ParsablePayload[Point]
-    click_type: str
+    click_type: ClickType
 
 
 @dataclass
@@ -24,7 +29,7 @@ class TryPointingPayload(Payload):
     cursor_position: ParsablePayload[Point]
     new_pointer: ParsablePayload[Point]
     color: Color
-    click_type: str
+    click_type: ClickType
 
 
 @dataclass

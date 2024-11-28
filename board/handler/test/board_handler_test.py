@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from board.handler import BoardHandler
 from event import EventBroker
 from message import Message
-from message.payload import FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent
+from message.payload import FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType
 
 from board.test.fixtures import setup_board
 from board import Point
@@ -107,7 +107,7 @@ class BoardHandlerTestCase(unittest.IsolatedAsyncioTestCase):
             payload=TryPointingPayload(
                 new_pointer=Point(0, 0),
                 cursor_position=Point(0, 0),
-                click_type="left",
+                click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
             )
         )
