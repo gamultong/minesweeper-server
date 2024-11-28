@@ -1,11 +1,29 @@
 from cursor import Cursor, Color
 from cursor.manager import CursorManager
-from event import EventBroker
 from message import Message
-from message.payload import NewConnEvent, NewConnPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType
+from message.payload import NewConnEvent, NewCursorPayload, MyCursorPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType
 import unittest
 from unittest.mock import AsyncMock, patch
 from board import Point
+
+"""
+BoardHandler Test
+----------------------------
+Test
+✅ : test 통과
+❌ : test 실패 
+🖊️ : test 작성
+
+- CursorManager
+    - 작성 해야함
+- new-conn-receiver
+    - ✅| normal-case
+        - ✅| without-cursors
+        - 작성해야함
+- pointing-recieve
+    - ✅| normal-case
+        - 작성 해야함
+"""
 
 
 def get_cur(conn_id):
@@ -21,6 +39,7 @@ def get_cur(conn_id):
 
 
 class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
+
     def setUp(self):
         CursorManager.cursor_dict = {
             "example_1": get_cur("example_1"),
@@ -55,35 +74,90 @@ class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(result), 3)
 
 
-class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
+class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     @patch("event.EventBroker.publish")
-    async def test_receive_new_conn_without_cursors(self, mock: AsyncMock):
+    async def test_new_conn_receive_without_cursors(self, mock: AsyncMock):
+        """
+        new-conn-receiver
+        without-cursors
+
+        description:
+            주변에 다른 커서 없을 경우
+        ----------------------------
+        trigger event ->
+
+        - new-conn : message[NewConnPayload]
+            - header : 
+                - sender : conn_id
+            - descrption :
+                connection 연결
+
+        ----------------------------
+        publish event ->
+
+        - multicast : message[NewCursorPayload]
+            - header :
+                - target_conns : [conn_id]
+                - origin_event : my-cursor
+            - descrption :
+                생성된 커서 정보
+        - multicast : message[CursorsPayload]
+            - header :
+                - target_conns : [conn_id]
+                - origin_event : cursors
+            - descrption :
+                생성된 커서의 주변 커서 정보
+        - multicast : message[CursorsPayload]
+            - header :
+                - target_conns : [conn_id의 주변 커서 id]
+                - origin_event : cursors
+            - descrption :
+                주변 커서에게 생성된 커서 정보
+        ----------------------------
+        """
+
+        # 초기 커서 셋팅
         CursorManager.cursor_dict = {}
 
+        # 생성될 커서 값
         expected_conn_id = "example"
         expected_height = 100
         expected_width = 100
 
+        # trigger message 생성
         message = Message(
             event=NewConnEvent.NEW_CONN,
-            payload=NewConnPayload(
+            payload=MyCursorPayload(
                 conn_id=expected_conn_id,
                 width=expected_width,
                 height=expected_height
             )
         )
 
+        # trigger event
         await CursorManager.receive_new_conn(message)
 
-        self.assertEqual(len(mock.mock_calls), 3)
-        got = mock.mock_calls[0].args[0]
+        # 호출 여부
+        self.assertEqual(len(mock.mock_calls), 1)
+        got: Message[NewCursorPayload] = mock.mock_calls[0].args[0]
 
+        # message 확인
         self.assertEqual(type(got), Message)
+        # message.event
         self.assertEqual(got.event, "multicast")
-
+        # message.header
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
         self.assertEqual(got.header["target_conns"][0], expected_conn_id)
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.MY_CURSOR)
+
+        # message.payload
+        self.assertEqual(type(got.payload), NewCursorPayload)
+        self.assertIsNone(got.payload.pointer)
+        self.assertEqual(got.payload.position.x, 0)
+        self.assertEqual(got.payload.position.y, 0)
+        self.assertIn(got.payload.color, Color)
 
     @patch("event.EventBroker.publish")
     async def test_receive_new_conn_with_cursors(self, mock: AsyncMock):
@@ -98,7 +172,7 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
 
         message = Message(
             event=NewConnEvent.NEW_CONN,
-            payload=NewConnPayload(
+            payload=MyCursorPayload(
                 conn_id=expected_conn_id,
                 width=expected_width,
                 height=expected_height
@@ -132,11 +206,11 @@ class CursorManagerNewConnTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(got.event, "multicast")
 
         self.assertIn("target_conns", got.header)
-        self.assertEqual(len(got.header["target_conns"]), len(CursorManager.cursor_dict))
-        self.assertEqual(set(got.header["target_conns"]), set([c.conn_id for c in CursorManager.cursor_dict.values()]))
+        self.assertEqual(len(got.header["target_conns"]), len(CursorManager.cursor_dict) - 1)
+        self.assertEqual(set(got.header["target_conns"]), set([c.conn_id for c in CursorManager.cursor_dict.values() if c.conn_id != expected_conn_id]))
 
 
-class CursorManagerPointingTestCase(unittest.IsolatedAsyncioTestCase):
+class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     @patch("event.EventBroker.publish")
     async def test_receive_pointing(self, mock: AsyncMock):
         expected_conn_id = "example"
