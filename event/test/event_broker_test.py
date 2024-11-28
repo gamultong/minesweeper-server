@@ -41,7 +41,7 @@ class EventBrokerTestCase(unittest.IsolatedAsyncioTestCase):
 
         await EventBroker.publish(message=message)
 
-        self.assertEqual(len(self.handler.receive_a.func.mock_calls), 1)
+        self.handler.receive_a.func.assert_called_once()
         mock_message = self.handler.receive_a.func.mock_calls[0].args[0]
         self.assertEqual(mock_message.event, message.event)
 

@@ -3,11 +3,13 @@ from unittest.mock import MagicMock, AsyncMock
 from fastapi.websockets import WebSocket
 
 
-def create_connection_mock() -> WebSocket:
-    con = MagicMock()
-    con.accept = AsyncMock()
-    con.receive_text = AsyncMock()
-    con.send_text = AsyncMock()
-    con.close = AsyncMock()
+class ConnMock():
+    def __init__(self):
+        self.accept = AsyncMock()
+        self.receive_text = AsyncMock()
+        self.send_text = AsyncMock()
+        self.close = AsyncMock()
 
-    return con
+
+def create_connection_mock() -> ConnMock:
+    return ConnMock()
