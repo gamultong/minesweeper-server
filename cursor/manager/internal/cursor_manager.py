@@ -6,7 +6,7 @@ from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayloa
 
 
 class CursorManager:
-    cursor_dict: dict[str, Cursor]
+    cursor_dict: dict[str, Cursor] = {}
 
     @staticmethod
     def create(conn_id: str):
@@ -18,15 +18,41 @@ class CursorManager:
         if conn_id in CursorManager.cursor_dict:
             del CursorManager.cursor_dict[conn_id]
 
+    # range 안에 커서가 있는가
     @staticmethod
     def exists_range(start: Point, end: Point) -> list[Cursor]:
-        # 일단 broadcast. 추후 고쳐야 함.
-        return list(CursorManager.cursor_dict.values())
+        result = []
+        for key in CursorManager.cursor_dict:
+            cur = CursorManager.cursor_dict[key]
+            if start.x > cur.position.x:
+                continue
+            if end.x < cur.position.x:
+                continue
+            if start.y < cur.position.y:
+                continue
+            if end.y > cur.position.y:
+                continue
+            result.append(cur)
 
+        return result
+
+    # 커서 view에 tile이 포함되는가
     @staticmethod
     def view_includes(p: Point) -> list[Cursor]:
-        # 일단 broadcast. 추후 고쳐야 함.
-        return list(CursorManager.cursor_dict.values())
+        result = []
+        for key in CursorManager.cursor_dict:
+            cur = CursorManager.cursor_dict[key]
+            if (cur.position.x - cur.width) > p.x:
+                continue
+            if (cur.position.x + cur.width) < p.x:
+                continue
+            if (cur.position.y - cur.height) > p.y:
+                continue
+            if (cur.position.y + cur.height) < p.y:
+                continue
+            result.append(cur)
+
+        return result
 
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
