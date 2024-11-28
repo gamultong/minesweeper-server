@@ -70,7 +70,7 @@ class CursorManager:
             event="multicast",
             header={"target_conns": [cursor.conn_id],
                     "origin_event": NewConnEvent.MY_CURSOR},
-            payload=NewCursorPayload(
+            payload=MyCursorPayload(
                 position=cursor.position,
                 pointer=cursor.pointer,
                 color=cursor.color
