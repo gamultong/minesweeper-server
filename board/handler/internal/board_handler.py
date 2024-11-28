@@ -69,7 +69,7 @@ class BoardHandler():
             Point(pointer_x-1, pointer_y+1),
             Point(pointer_x+1, pointer_y-1)
         )
-
+        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
         pointable = tiles.find("O") != -1
 
         await EventBroker.publish(
