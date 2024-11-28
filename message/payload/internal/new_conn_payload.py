@@ -27,12 +27,8 @@ class CursorPayload(Payload):
 
 
 @dataclass
-class NearbyCursorPayload(Payload):
+class CursorsPayload(Payload):
     cursors: list[CursorPayload]
-
-
-class CursorAppearedPayload(CursorPayload):
-    pass
 
 
 class NewCursorPayload(CursorPayload):

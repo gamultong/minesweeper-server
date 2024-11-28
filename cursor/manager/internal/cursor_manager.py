@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayload, CursorAppearedPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
+from message.payload import NewConnPayload, NewCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
 
 
 class CursorManager:
@@ -90,9 +90,9 @@ class CursorManager:
                 event="multicast",
                 header={"target_conns": [message.payload.conn_id],
                         "origin_event": NewConnEvent.NEARYBY_CURSORS},
-                payload=NearbyCursorPayload(
+                payload=CursorsPayload(
                     cursors=[
-                        CursorPayload(c.position, c.pointer, c.color) for c in cursors_in_range
+                        CursorPayload(cur.position, cur.pointer, cur.color) for cur in cursors_in_range
                     ]
                 )
             )
@@ -105,10 +105,8 @@ class CursorManager:
                 event="multicast",
                 header={"target_conns": [cursor.conn_id for cursor in cursors_with_view_including],
                         "origin_event": NewConnEvent.CURSOR_APPEARED},
-                payload=CursorAppearedPayload(
-                    position=cursor.position,
-                    pointer=cursor.pointer,
-                    color=cursor.color
+                payload=CursorsPayload(
+                    cursors=[CursorPayload(cursor.position, cursor.pointer, cursor.color)]
                 )
             )
 
