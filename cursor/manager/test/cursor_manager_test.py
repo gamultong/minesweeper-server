@@ -1,7 +1,7 @@
 from cursor import Cursor, Color
 from cursor.manager import CursorManager
 from message import Message
-from message.payload import NewConnEvent, NewCursorPayload, MyCursorPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType
+from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType
 import unittest
 from unittest.mock import AsyncMock, patch
 from board import Point
@@ -95,7 +95,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         ----------------------------
         publish event ->
 
-        - multicast : message[NewCursorPayload]
+        - multicast : message[MyCursorPayload]
             - header :
                 - target_conns : [conn_id]
                 - origin_event : my-cursor
@@ -127,7 +127,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         # trigger message 생성
         message = Message(
             event=NewConnEvent.NEW_CONN,
-            payload=MyCursorPayload(
+            payload=NewConnPayload(
                 conn_id=expected_conn_id,
                 width=expected_width,
                 height=expected_height
@@ -139,7 +139,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
         # 호출 여부
         self.assertEqual(len(mock.mock_calls), 1)
-        got: Message[NewCursorPayload] = mock.mock_calls[0].args[0]
+        got: Message[MyCursorPayload] = mock.mock_calls[0].args[0]
 
         # message 확인
         self.assertEqual(type(got), Message)
@@ -153,7 +153,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(got.header["origin_event"], NewConnEvent.MY_CURSOR)
 
         # message.payload
-        self.assertEqual(type(got.payload), NewCursorPayload)
+        self.assertEqual(type(got.payload), MyCursorPayload)
         self.assertIsNone(got.payload.pointer)
         self.assertEqual(got.payload.position.x, 0)
         self.assertEqual(got.payload.position.y, 0)
@@ -172,7 +172,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
         message = Message(
             event=NewConnEvent.NEW_CONN,
-            payload=MyCursorPayload(
+            payload=NewConnPayload(
                 conn_id=expected_conn_id,
                 width=expected_width,
                 height=expected_height

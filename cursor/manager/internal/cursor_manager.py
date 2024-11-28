@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import MyCursorPayload, NewCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
+from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
 
 
 class CursorManager:
@@ -60,7 +60,7 @@ class CursorManager:
 
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
-    async def receive_new_conn(message: Message[MyCursorPayload]):
+    async def receive_new_conn(message: Message[NewConnPayload]):
         CursorManager.create(message.payload.conn_id)
 
         cursor = CursorManager.cursor_dict[message.payload.conn_id]

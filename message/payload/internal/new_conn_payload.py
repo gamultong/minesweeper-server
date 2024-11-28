@@ -7,12 +7,12 @@ from enum import Enum
 
 class NewConnEvent(str, Enum):
     NEW_CONN = "new-conn"
-    CURSORS = "cuesors"
+    CURSORS = "cursors"
     MY_CURSOR = "my-cursor"
 
 
 @dataclass
-class MyCursorPayload(Payload):
+class NewConnPayload(Payload):
     conn_id: str
     width: int
     height: int
@@ -30,5 +30,5 @@ class CursorsPayload(Payload):
     cursors: list[CursorPayload]
 
 
-class NewCursorPayload(CursorPayload):
+class MyCursorPayload(CursorPayload):
     pass

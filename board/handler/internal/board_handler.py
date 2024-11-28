@@ -1,7 +1,7 @@
 from event import EventBroker
 from board import Board, Point
 from message import Message
-from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, MyCursorPayload, TryPointingPayload, PointingResultPayload, PointEvent
+from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent
 
 
 class BoardHandler():
@@ -29,7 +29,7 @@ class BoardHandler():
 
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
-    async def receive_new_conn(message: Message[MyCursorPayload]):
+    async def receive_new_conn(message: Message[NewConnPayload]):
         sender = message.header["sender"]
 
         # 0, 0 기준으로 fetch

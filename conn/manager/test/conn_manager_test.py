@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock, patch
 from conn import Conn
 from conn.manager import ConnectionManager
 from message import Message
-from message.payload import TilesPayload, NewConnEvent, MyCursorPayload
+from message.payload import TilesPayload, NewConnEvent, NewConnPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
 from board import Point
@@ -30,10 +30,10 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ConnectionManager.get_conn(con_obj.id).id, con_obj.id)
 
         mock.assert_called_once()
-        got: Message[MyCursorPayload] = mock.mock_calls[0].args[0]
+        got: Message[NewConnPayload] = mock.mock_calls[0].args[0]
 
         self.assertEqual(type(got), Message)
-        self.assertEqual(type(got.payload), MyCursorPayload)
+        self.assertEqual(type(got.payload), NewConnPayload)
         self.assertEqual(got.payload.conn_id, con_obj.id)
         self.assertEqual(got.payload.width, width)
         self.assertEqual(got.payload.height, height)

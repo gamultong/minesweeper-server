@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 from board.handler import BoardHandler
 from message import Message
 from message.payload import \
-    FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, MyCursorPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType
+    FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType
 from board.test.fixtures import setup_board
 from board import Point
 from cursor import Color
@@ -100,7 +100,7 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
         message = Message(
             event=NewConnEvent.NEW_CONN,
             header={"sender": "ayo"},
-            payload=MyCursorPayload(conn_id="not important", width=2, height=2)
+            payload=NewConnPayload(conn_id="not important", width=2, height=2)
         )
 
         await BoardHandler.receive_new_conn(message)
