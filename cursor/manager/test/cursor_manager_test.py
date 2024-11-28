@@ -2,11 +2,10 @@ from cursor import Cursor, Color
 from cursor.manager import CursorManager
 from event import EventBroker
 from message import Message
-from message.payload import NewConnEvent, NewConnPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload
+from message.payload import NewConnEvent, NewConnPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType
 import unittest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock
 from board import Point
-from warnings import warn
 
 
 def get_cur(conn_id):
@@ -14,6 +13,7 @@ def get_cur(conn_id):
         conn_id=conn_id,
         position=Point(0, 0),
         pointer=None,
+        new_pointer=None,
         height=10,
         width=10,
         color=Color.BLUE
@@ -197,7 +197,7 @@ class CursorManagerPointingTestCase(unittest.IsolatedAsyncioTestCase):
             expected_conn_id: cursor
         }
 
-        click_type = "GENERAL_CLICK"
+        click_type = ClickType.GENERAL_CLICK
 
         message = Message(
             event=PointEvent.POINTING,
