@@ -7,13 +7,12 @@ from enum import Enum
 
 class NewConnEvent(str, Enum):
     NEW_CONN = "new-conn"
-    NEARYBY_CURSORS = "nearby-cursors"
-    CURSOR_APPEARED = "cursor-appeared"
+    CURSORS = "cuesors"
     MY_CURSOR = "my-cursor"
 
 
 @dataclass
-class NewConnPayload(Payload):
+class MyCursorPayload(Payload):
     conn_id: str
     width: int
     height: int
