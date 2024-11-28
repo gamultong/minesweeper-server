@@ -1,5 +1,5 @@
 from typing import Generic, TypeVar
-from message.payload import Payload, FetchTilesPayload, TilesPayload, PointingPayload
+from message.payload import Payload, FetchTilesPayload, TilesPayload, PointingPayload, MovingPayload
 from .exceptions import InvalidEventTypeException
 
 import json
@@ -12,7 +12,8 @@ EVENT_TYPE = TypeVar(
 DECODABLE_PAYLOAD_DICT: dict[str, Payload] = {
     "fetch-tiles": FetchTilesPayload,
     "tiles": TilesPayload,
-    "pointing": PointingPayload
+    "pointing": PointingPayload,
+    "moving": MovingPayload
 }
 
 

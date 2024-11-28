@@ -4,3 +4,4 @@ from .internal.exceptions import InvalidFieldException, MissingFieldException
 from .internal.new_conn_payload import NewConnPayload, NewConnEvent, NearbyCursorPayload, CursorPayload, CursorAppearedPayload, NewCursorPayload
 from .internal.parsable_payload import ParsablePayload
 from .internal.pointing_payload import PointerSetPayload, PointingResultPayload, PointingPayload, TryPointingPayload, PointEvent, ClickType
+from .internal.move_payload import MoveEvent, MovingPayload, MovedPayload, CheckMovablePayload, MovableResultPayload
