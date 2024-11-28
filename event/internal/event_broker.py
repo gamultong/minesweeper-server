@@ -29,6 +29,9 @@ class Receiver(Generic[EVENT_TYPE]):
     async def __call__(self, msg: Message[EVENT_TYPE]):
         return await self.func(msg)
 
+    def __repr__(self):
+        return f"{self.events} -> {self.func}"
+
     @staticmethod
     def get_receiver(id: str) -> Receiver | None:
         if id not in Receiver.receiver_dict:

@@ -1,7 +1,7 @@
 from event import EventBroker
 from board import Board, Point
 from message import Message
-from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload
+from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent
 
 
 class BoardHandler():
@@ -53,3 +53,31 @@ class BoardHandler():
         )
 
         await EventBroker.publish(resp_message)
+
+    @EventBroker.add_receiver(PointEvent.TRY_POINTING)
+    @staticmethod
+    async def receive_try_pointing(message: Message[TryPointingPayload]):
+        pointer_x = message.payload.new_pointer.x
+        pointer_y = message.payload.new_pointer.y
+
+        if "sender" not in message.header:
+            raise "header 없음"
+
+        sender = message.header["sender"]
+
+        tiles = Board.fetch(
+            Point(pointer_x-1, pointer_y+1),
+            Point(pointer_x+1, pointer_y-1)
+        )
+        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
+        pointable = tiles.find("O") != -1
+
+        await EventBroker.publish(
+            message=Message(
+                event=PointEvent.POINTING_RESULT,
+                header={"receiver": sender},
+                payload=PointingResultPayload(
+                    pointable=pointable
+                )
+            )
+        )
