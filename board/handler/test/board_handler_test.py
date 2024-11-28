@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 from board.handler import BoardHandler
 from message import Message
 from message.payload import \
-    FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType
+    FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType, MoveEvent, CheckMovablePayload, MovableResultPayload
 from board.test.fixtures import setup_board
 from board import Point
 from cursor import Color
@@ -27,6 +27,8 @@ Test
     - ✅| normal-case
 - try-pointing-receiver
     - ✅| normal-case
+- check-movable-receiver
+    -  ✅| normal-case
 """
 
 
@@ -122,8 +124,9 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
         self.assertEqual(got.payload.end_p.y, -2)
         self.assertEqual(got.payload.tiles, "df123df123df123er567er567")
 
-    @ patch("event.EventBroker.publish")
+    @patch("event.EventBroker.publish")
     async def test_try_pointing(self, mock: AsyncMock):
+        # TODO: pointable한 것과 pointable하지 않은 것 테스트 나누기
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": "ayo"},
@@ -148,7 +151,36 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
         self.assertEqual(got.header["receiver"], "ayo")
 
         self.assertEqual(type(got.payload), PointingResultPayload)
-        self.assertEqual(got.payload.pointable, False)
+        self.assertFalse(got.payload.pointable)
+
+    @patch("event.EventBroker.publish")
+    async def test_check_movable(self, mock: AsyncMock):
+        # TODO: 위와 마찬가지로 movable한 것과 movable하지 않은 것 테스트 분리
+
+        new_position = Point(0, 0)
+        message = Message(
+            event=MoveEvent.CHECK_MOVABLE,
+            header={"sender": "ayo"},
+            payload=CheckMovablePayload(
+                position=new_position
+            )
+        )
+
+        await BoardHandler.receive_check_movable(message)
+
+        mock.assert_called_once()
+        got: Message[MovableResultPayload] = mock.mock_calls[0].args[0]
+
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, MoveEvent.MOVABLE_RESULT)
+
+        self.assertEqual(len(got.header), 1)
+        self.assertIn("receiver", got.header)
+        self.assertEqual(got.header["receiver"], "ayo")
+
+        self.assertEqual(type(got.payload), MovableResultPayload)
+        self.assertEqual(got.payload.position, new_position)
+        self.assertFalse(got.payload.movable)
 
 
 if __name__ == "__main__":

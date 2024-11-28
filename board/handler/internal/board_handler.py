@@ -1,7 +1,7 @@
 from event import EventBroker
 from board import Board, Point
 from message import Message
-from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent
+from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, MoveEvent, CheckMovablePayload, MovableResultPayload
 
 
 class BoardHandler():
@@ -78,6 +78,29 @@ class BoardHandler():
                 header={"receiver": sender},
                 payload=PointingResultPayload(
                     pointable=pointable
+                )
+            )
+        )
+
+    @EventBroker.add_receiver(MoveEvent.CHECK_MOVABLE)
+    @staticmethod
+    async def receive_check_movable(message: Message[CheckMovablePayload]):
+        sender = message.header["sender"]
+
+        position = message.payload.position
+
+        tile = Board.fetch(start=position, end=position)[0]
+
+        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
+        movable = tile == "O"
+
+        await EventBroker.publish(
+            Message(
+                event=MoveEvent.MOVABLE_RESULT,
+                header={"receiver": sender},
+                payload=MovableResultPayload(
+                    position=position,
+                    movable=movable
                 )
             )
         )
