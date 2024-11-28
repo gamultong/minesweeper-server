@@ -12,12 +12,12 @@ class MessageTestCase(unittest.TestCase):
         socket_msg = FETCH_TILES_EXAMPLE
         message: Message[FetchTilesPayload] = Message.from_str(socket_msg)
 
-        assert message.event == "fetch-tiles"
-        assert issubclass(type(message.payload), Payload)
-        assert message.payload.start_p.x == 0
-        assert message.payload.start_p.y == 0
-        assert message.payload.end_p.x == 0
-        assert message.payload.end_p.y == 0
+        self.assertEqual(message.event, "fetch-tiles")
+        self.assertTrue(issubclass(type(message.payload), Payload))
+        self.assertEqual(message.payload.start_p.x, 0)
+        self.assertEqual(message.payload.start_p.y, 0)
+        self.assertEqual(message.payload.end_p.x, 0)
+        self.assertEqual(message.payload.end_p.y, 0)
 
     def test_fetch_tiles_to_str(self):
         message: Message[FetchTilesPayload] = Message(
@@ -30,19 +30,19 @@ class MessageTestCase(unittest.TestCase):
 
         msg_str = message.to_str()
 
-        assert json.loads(msg_str) == json.loads(FETCH_TILES_EXAMPLE)
+        self.assertEqual(json.loads(msg_str), json.loads(FETCH_TILES_EXAMPLE))
 
     def test_tiles_from_str(self):
         socket_msg = TILES_EXAMPLE
         message: Message[TilesPayload] = Message.from_str(socket_msg)
 
-        assert message.event == "tiles"
-        assert issubclass(type(message.payload), Payload)
-        assert message.payload.start_p.x == 0
-        assert message.payload.start_p.y == 0
-        assert message.payload.end_p.x == 4
-        assert message.payload.end_p.y == 4
-        assert message.payload.tiles == "CCCCCCCCCCC111CC1F1CC111C"
+        self.assertEqual(message.event, "tiles")
+        self.assertTrue(issubclass(type(message.payload), Payload))
+        self.assertEqual(message.payload.start_p.x, 0)
+        self.assertEqual(message.payload.start_p.y, 0)
+        self.assertEqual(message.payload.end_p.x, 4)
+        self.assertEqual(message.payload.end_p.y, 4)
+        self.assertEqual(message.payload.tiles, "CCCCCCCCCCC111CC1F1CC111C")
 
     def test_tiles_to_str(self):
         message: Message[TilesPayload] = Message(
@@ -56,7 +56,7 @@ class MessageTestCase(unittest.TestCase):
 
         msg_str = message.to_str()
 
-        assert json.loads(msg_str) == json.loads(TILES_EXAMPLE)
+        self.assertEqual(json.loads(msg_str), json.loads(TILES_EXAMPLE))
 
     def test_from_str_invalid_event(self):
         socket_msg = INVALID_EVENT_EXAMPLE
@@ -64,7 +64,7 @@ class MessageTestCase(unittest.TestCase):
         with self.assertRaises(InvalidEventTypeException) as cm:
             Message.from_str(socket_msg)
 
-        assert cm.exception.msg == "invalid event type: 'ayo invalid'", cm.exception.msg
+        self.assertEqual(cm.exception.msg, "invalid event type: 'ayo invalid'")
 
 
 if __name__ == "__main__":

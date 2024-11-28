@@ -24,26 +24,26 @@ class EventBrokerTestCase(unittest.IsolatedAsyncioTestCase):
         EventBroker.remove_receiver(self.handler.receive_b)
 
     def test_add_receiver(self):
-        assert self.handler.receive_a.id in Receiver.receiver_dict
+        self.assertIn(self.handler.receive_a.id, Receiver.receiver_dict)
 
     def test_remove_receiver(self):
-        assert self.handler.receive_a.id in Receiver.receiver_dict
-        assert "example_a" in EventBroker.event_dict
-        assert EventBroker.event_dict["example_a"].count(self.handler.receive_a.id) == 1
+        self.assertIn(self.handler.receive_a.id, Receiver.receiver_dict)
+        self.assertIn("example_a", EventBroker.event_dict)
+        self.assertEqual(EventBroker.event_dict["example_a"].count(self.handler.receive_a.id), 1)
 
         EventBroker.remove_receiver(self.handler.receive_a)
 
-        assert self.handler.receive_a.id not in Receiver.receiver_dict
-        assert "example_a" not in EventBroker.event_dict
+        self.assertNotIn(self.handler.receive_a.id, Receiver.receiver_dict)
+        self.assertNotIn("example_a", EventBroker.event_dict)
 
     async def test_publish(self):
         message = Message(event="example_a", payload=None)
 
         await EventBroker.publish(message=message)
 
-        assert len(self.handler.receive_a.func.mock_calls) == 1
+        self.handler.receive_a.func.assert_called_once()
         mock_message = self.handler.receive_a.func.mock_calls[0].args[0]
-        assert mock_message.event == message.event
+        self.assertEqual(mock_message.event, message.event)
 
     async def test_multiple_receiver_publish(self):
         message_b = Message(event="example_b", payload=None)
@@ -52,13 +52,13 @@ class EventBrokerTestCase(unittest.IsolatedAsyncioTestCase):
         message_c = Message(event="example_c", payload=None)
         await EventBroker.publish(message=message_c)
 
-        assert len(self.handler.receive_b.func.mock_calls) == 2
+        self.assertEqual(len(self.handler.receive_b.func.mock_calls), 2)
 
         mock_message_b = self.handler.receive_b.func.mock_calls[0].args[0]
-        assert mock_message_b.event == message_b.event
+        self.assertEqual(mock_message_b.event, message_b.event)
 
         mock_message_c = self.handler.receive_b.func.mock_calls[1].args[0]
-        assert mock_message_c.event == message_c.event
+        self.assertEqual(mock_message_c.event, message_c.event)
 
     async def test_publish_no_receiver(self):
         message = Message(event="invaild_event", payload=None)
