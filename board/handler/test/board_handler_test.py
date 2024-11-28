@@ -13,13 +13,16 @@ from cursor import Color
 BoardHandler Test
 ----------------------------
 Test
-❌ ✅
+✅ : test 통과
+❌ : test 실패 
+🖊️ : test 작성
+
 - fetch-tiles-receiver
     - ✅| normal-case
-    - ❌| invaild-message
-        - ❌| invaild-message-payload
-        - ❌| no-sender
-        - ❌| invaild-header
+    - 🖊️| invaild-message
+        - 🖊️| invaild-message-payload
+        - 🖊️| no-sender
+        - 🖊️| invaild-header
 - new-conn-receiver
     - ✅| normal-case
 - try-pointing-receiver
@@ -40,19 +43,21 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
         normal-case
         ----------------------------
         trigger event ->
-            - fetch-tiles : message[FetchTilesPayload]
-                - header : 
-                    - sender : conn_id
-                - descrption :
-                   econn_id의 tiles 정보 요청
+
+        - fetch-tiles : message[FetchTilesPayload]
+            - header : 
+                - sender : conn_id
+            - descrption :
+                econn_id의 tiles 정보 요청
         ----------------------------
         publish event ->
-            - multicast : message[TilesPayload]
-                - header :
-                    - target_conns : [conn_id]
-                    - origin_event : tiles
-                - descrption :
-                   fetch-tiles의 대한 응답
+
+        - multicast : message[TilesPayload]
+            - header :
+                - target_conns : [conn_id]
+                - origin_event : tiles
+            - descrption :
+                fetch-tiles의 대한 응답
         ----------------------------
         """
 

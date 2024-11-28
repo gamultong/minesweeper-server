@@ -7,8 +7,7 @@ from enum import Enum
 
 class NewConnEvent(str, Enum):
     NEW_CONN = "new-conn"
-    NEARYBY_CURSORS = "nearby-cursors"
-    CURSOR_APPEARED = "cursor-appeared"
+    CURSORS = "cursors"
     MY_CURSOR = "my-cursor"
 
 
@@ -27,13 +26,9 @@ class CursorPayload(Payload):
 
 
 @dataclass
-class NearbyCursorPayload(Payload):
+class CursorsPayload(Payload):
     cursors: list[CursorPayload]
 
 
-class CursorAppearedPayload(CursorPayload):
-    pass
-
-
-class NewCursorPayload(CursorPayload):
+class MyCursorPayload(CursorPayload):
     pass

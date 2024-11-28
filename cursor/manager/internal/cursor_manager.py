@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, NewCursorPayload, NearbyCursorPayload, CursorAppearedPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
+from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
 
 
 class CursorManager:
@@ -20,9 +20,11 @@ class CursorManager:
 
     # range 안에 커서가 있는가
     @staticmethod
-    def exists_range(start: Point, end: Point) -> list[Cursor]:
+    def exists_range(start: Point, end: Point, *exclude_ids) -> list[Cursor]:
         result = []
         for key in CursorManager.cursor_dict:
+            if exclude_ids and key in exclude_ids:
+                continue
             cur = CursorManager.cursor_dict[key]
             if start.x > cur.position.x:
                 continue
@@ -38,9 +40,11 @@ class CursorManager:
 
     # 커서 view에 tile이 포함되는가
     @staticmethod
-    def view_includes(p: Point) -> list[Cursor]:
+    def view_includes(p: Point, *exclude_ids) -> list[Cursor]:
         result = []
         for key in CursorManager.cursor_dict:
+            if exclude_ids and key in exclude_ids:
+                continue
             cur = CursorManager.cursor_dict[key]
             if (cur.position.x - cur.width) > p.x:
                 continue
@@ -66,7 +70,7 @@ class CursorManager:
             event="multicast",
             header={"target_conns": [cursor.conn_id],
                     "origin_event": NewConnEvent.MY_CURSOR},
-            payload=NewCursorPayload(
+            payload=MyCursorPayload(
                 position=cursor.position,
                 pointer=cursor.pointer,
                 color=cursor.color
@@ -84,31 +88,29 @@ class CursorManager:
             y=cursor.position.y - cursor.height
         )
 
-        cursors_in_range = CursorManager.exists_range(start_p, end_p)
+        cursors_in_range = CursorManager.exists_range(start_p, end_p, cursor.conn_id)
         if len(cursors_in_range) > 0:
             nearby_cursors_message = Message(
                 event="multicast",
                 header={"target_conns": [message.payload.conn_id],
-                        "origin_event": NewConnEvent.NEARYBY_CURSORS},
-                payload=NearbyCursorPayload(
+                        "origin_event": NewConnEvent.CURSORS},
+                payload=CursorsPayload(
                     cursors=[
-                        CursorPayload(c.position, c.pointer, c.color) for c in cursors_in_range
+                        CursorPayload(cur.position, cur.pointer, cur.color) for cur in cursors_in_range
                     ]
                 )
             )
 
             await EventBroker.publish(nearby_cursors_message)
 
-        cursors_with_view_including = CursorManager.view_includes(cursor.position)
+        cursors_with_view_including = CursorManager.view_includes(cursor.position, cursor.conn_id)
         if len(cursors_with_view_including) > 0:
             cursor_appeared_message = Message(
                 event="multicast",
                 header={"target_conns": [cursor.conn_id for cursor in cursors_with_view_including],
-                        "origin_event": NewConnEvent.CURSOR_APPEARED},
-                payload=CursorAppearedPayload(
-                    position=cursor.position,
-                    pointer=cursor.pointer,
-                    color=cursor.color
+                        "origin_event": NewConnEvent.CURSORS},
+                payload=CursorsPayload(
+                    cursors=[CursorPayload(cursor.position, cursor.pointer, cursor.color)]
                 )
             )
 

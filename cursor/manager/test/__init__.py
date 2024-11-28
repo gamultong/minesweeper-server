@@ -1,1 +1,1 @@
-from .cursor_manager_test import CursorManagerTestCase, CursorManagerNewConnTestCase, CursorManagerPointingTestCase
+from .cursor_manager_test import CursorManagerTestCase, CursorManager_NewConnReceiver_TestCase, CursorManager_PointingReceiver_TestCase
