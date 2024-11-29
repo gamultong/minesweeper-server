@@ -2,6 +2,7 @@ from board import Point
 from cursor import Color
 from dataclasses import dataclass
 from .base_payload import Payload
+from .parsable_payload import ParsablePayload
 from enum import Enum
 
 
@@ -14,22 +15,22 @@ class MoveEvent(str, Enum):
 
 @dataclass
 class MovingPayload(Payload):
-    position: Point
+    position: ParsablePayload[Point]
 
 
 @dataclass
 class MovedPayload(Payload):
-    origin_position: Point
-    new_position: Point
+    origin_position: ParsablePayload[Point]
+    new_position: ParsablePayload[Point]
     color: Color
 
 
 @dataclass
 class CheckMovablePayload(Payload):
-    position: Point
+    position: ParsablePayload[Point]
 
 
 @dataclass
 class MovableResultPayload(Payload):
-    position: Point
+    position: ParsablePayload[Point]
     movable: bool
