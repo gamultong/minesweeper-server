@@ -34,6 +34,7 @@ class TryPointingPayload(Payload):
 
 @dataclass
 class PointingResultPayload(Payload):
+    pointer: ParsablePayload[Point]
     pointable: bool
 
 
