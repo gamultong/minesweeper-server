@@ -127,14 +127,13 @@ class CursorManager:
         # 뷰 바운더리 안에서 포인팅하는지 확인
         left_up_edge = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
         right_down_edge = Point(cursor.position.x + cursor.width, cursor.position.y - cursor.height)
-
         if \
                 new_pointer.x < left_up_edge.x or \
                 new_pointer.x > right_down_edge.x or \
                 new_pointer.y > left_up_edge.y or \
                 new_pointer.y < right_down_edge.y:
-            # TODO: 예외 처리?
-            pass
+            # TODO: 예외 처리
+            raise "커서 뷰 바운더리 벗어난 곳에 포인팅함"
 
         cursor.new_pointer = new_pointer
 
@@ -162,16 +161,10 @@ class CursorManager:
 
         if new_position == cursor.position:
             # TODO: 예외 처리
-            pass
+            raise "기존 위치와 같은 위치로 이동"
 
-        if \
-                new_position.x < cursor.position.x - 1 or \
-                new_position.x > cursor.position.x + 1 or \
-                new_position.y < cursor.position.y - 1 or \
-                new_position.y > cursor.position.y + 1:
-            # 주변 8칸을 벗어남
-            # TODO: 예외 처리
-            pass
+        if not cursor.check_interactable(new_position):
+            raise "주변 8칸 벗어남"
 
         message = Message(
             event=MoveEvent.CHECK_MOVABLE,
