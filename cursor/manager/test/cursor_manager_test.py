@@ -1,13 +1,13 @@
 from cursor import Cursor, Color
 from cursor.manager import CursorManager
 from message import Message
-from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType
+from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType, MoveEvent, MovingPayload, CheckMovablePayload
 import unittest
 from unittest.mock import AsyncMock, patch
 from board import Point
 
 """
-BoardHandler Test
+CursorManager Test
 ----------------------------
 Test
 ✅ : test 통과
@@ -20,7 +20,12 @@ Test
     - ✅| normal-case
         - ✅| without-cursors
         - 작성해야함
-- pointing-recieve
+- pointing-receiver
+    - ✅| normal-case
+        - 작성 해야함
+# - pointing_result-receiver
+#     - 작성해야 함
+- moving-receiver
     - ✅| normal-case
         - 작성 해야함
 """
@@ -366,6 +371,57 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(got.payload.origin_position)
         self.assertEqual(got.payload.color, cursor.color)
         self.assertEqual(got.payload.new_position, Point(0, 0))
+
+
+class CursorManager_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
+    """
+    TODO: 테스트 케이스
+    1. 자기 자신 위치로 이동
+    2. 주변 8칸 벗어나게 이동
+    """
+
+    def setUp(self):
+        self.conn_id = "example"
+
+        self.cursor = Cursor.create(conn_id=self.conn_id)
+
+        CursorManager.cursor_dict = {
+            self.conn_id: self.cursor
+        }
+
+    def tearDown(self):
+        CursorManager.cursor_dict = {}
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_moving(self, mock: AsyncMock):
+        message = Message(
+            event=MoveEvent.MOVING,
+            header={"sender": self.conn_id},
+            payload=CheckMovablePayload(
+                position=Point(
+                    # 위로 한칸 이동
+                    x=self.cursor.position.x,
+                    y=self.cursor.position.y + 1,
+                )
+            )
+        )
+
+        await CursorManager.receive_moving(message)
+
+        # check-movable 이벤트 발행 확인
+        mock.assert_called_once()
+        got = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, MoveEvent.CHECK_MOVABLE)
+
+        # sender 보냈는지 확인
+        self.assertIn("sender", got.header)
+        self.assertEqual(type(got.header["sender"]), str)
+        self.assertEqual(got.header["sender"], self.conn_id)
+
+        # 새로운 위치에 대해 check-movable 발행하는지 확인
+        self.assertEqual(type(got.payload), CheckMovablePayload)
+        self.assertEqual(got.payload.position, message.payload.position)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
+from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent, MoveEvent, MovingPayload, CheckMovablePayload
 
 
 class CursorManager:
@@ -127,14 +127,13 @@ class CursorManager:
         # 뷰 바운더리 안에서 포인팅하는지 확인
         left_up_edge = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
         right_down_edge = Point(cursor.position.x + cursor.width, cursor.position.y - cursor.height)
-
         if \
                 new_pointer.x < left_up_edge.x or \
                 new_pointer.x > right_down_edge.x or \
                 new_pointer.y > left_up_edge.y or \
                 new_pointer.y < right_down_edge.y:
-            # TODO: 예외 처리?
-            pass
+            # TODO: 예외 처리
+            raise "커서 뷰 바운더리 벗어난 곳에 포인팅함"
 
         cursor.new_pointer = new_pointer
 
@@ -146,6 +145,32 @@ class CursorManager:
                 new_pointer=new_pointer,
                 color=cursor.color,
                 click_type=message.payload.click_type
+            )
+        )
+
+        await EventBroker.publish(message)
+
+    @EventBroker.add_receiver(MoveEvent.MOVING)
+    @staticmethod
+    async def receive_moving(message: Message[MovingPayload]):
+        sender = message.header["sender"]
+
+        cursor = CursorManager.cursor_dict[sender]
+
+        new_position = message.payload.position
+
+        if new_position == cursor.position:
+            # TODO: 예외 처리
+            raise "기존 위치와 같은 위치로 이동"
+
+        if not cursor.check_interactable(new_position):
+            raise "주변 8칸 벗어남"
+
+        message = Message(
+            event=MoveEvent.CHECK_MOVABLE,
+            header={"sender": cursor.conn_id},
+            payload=CheckMovablePayload(
+                position=new_position
             )
         )
 
