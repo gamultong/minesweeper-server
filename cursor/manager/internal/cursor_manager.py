@@ -2,7 +2,7 @@ from cursor import Cursor
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent
+from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent, MoveEvent, MovingPayload, CheckMovablePayload
 
 
 class CursorManager:
@@ -146,6 +146,38 @@ class CursorManager:
                 new_pointer=new_pointer,
                 color=cursor.color,
                 click_type=message.payload.click_type
+            )
+        )
+
+        await EventBroker.publish(message)
+
+    @EventBroker.add_receiver(MoveEvent.MOVING)
+    @staticmethod
+    async def receive_moving(message: Message[MovingPayload]):
+        sender = message.header["sender"]
+
+        cursor = CursorManager.cursor_dict[sender]
+
+        new_position = message.payload.position
+
+        if new_position == cursor.position:
+            # TODO: 예외 처리
+            pass
+
+        if \
+                new_position.x < cursor.position.x - 1 or \
+                new_position.x > cursor.position.x + 1 or \
+                new_position.y < cursor.position.y - 1 or \
+                new_position.y > cursor.position.y + 1:
+            # 주변 8칸을 벗어남
+            # TODO: 예외 처리
+            pass
+
+        message = Message(
+            event=MoveEvent.CHECK_MOVABLE,
+            header={"sender": cursor.conn_id},
+            payload=CheckMovablePayload(
+                position=new_position
             )
         )
 
