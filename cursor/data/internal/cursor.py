@@ -16,17 +16,6 @@ class Cursor:
         self.width = width
         self.height = height
 
-    def check_interactable(self, p: Point) -> bool:
-        """
-        p가 커서의 인터랙션 범위에 포함되는지 확인한다.
-        인터랙션 가능하면 True.
-        """
-        return \
-            p.x >= self.position.x - 1 and \
-            p.x <= self.position.x + 1 and \
-            p.y >= self.position.y - 1 and \
-            p.y <= self.position.y + 1
-
     @staticmethod
     def create(conn_id: str):
         return Cursor(
