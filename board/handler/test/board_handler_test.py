@@ -6,7 +6,7 @@ from message.payload import \
     FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType, MoveEvent, CheckMovablePayload, MovableResultPayload
 from board.test.fixtures import setup_board
 from board import Point
-from cursor import Color
+from cursor.data import Color
 
 
 """

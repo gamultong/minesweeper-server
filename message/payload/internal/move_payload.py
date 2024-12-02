@@ -1,5 +1,5 @@
 from board import Point
-from cursor import Color
+from cursor.data import Color
 from dataclasses import dataclass
 from .base_payload import Payload
 from .parsable_payload import ParsablePayload

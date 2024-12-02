@@ -16,7 +16,8 @@ if __name__ == "__main__":
     from conn.manager.test import *
 
     # cursor
-    from cursor.test import *
-    from cursor.manager.test import *
+    from cursor.data.test import *
+    from cursor.data.handler.test import *
+    from cursor.event.handler.test import *
 
     unittest.main()

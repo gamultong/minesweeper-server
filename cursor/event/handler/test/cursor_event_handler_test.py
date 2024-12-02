@@ -1,21 +1,19 @@
-from cursor import Cursor, Color
-from cursor.manager import CursorManager
+from cursor.data import Cursor, Color
+from cursor.data.handler import CursorHandler
+from cursor.event.handler import CursorEventHandler
 from message import Message
-from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType, MoveEvent, MovingPayload, CheckMovablePayload
+from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, CursorsPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType, MoveEvent, MovingPayload, CheckMovablePayload
 import unittest
 from unittest.mock import AsyncMock, patch
 from board import Point
 
 """
-CursorManager Test
+CursorEventHandler Test
 ----------------------------
 Test
 ✅ : test 통과
 ❌ : test 실패 
 🖊️ : test 작성
-
-- CursorManager
-    - 작성 해야함
 - new-conn-receiver
     - ✅| normal-case
         - ✅| without-cursors
@@ -31,54 +29,12 @@ Test
 """
 
 
-def get_cur(conn_id):
-    return Cursor(
-        conn_id=conn_id,
-        position=Point(0, 0),
-        pointer=None,
-        height=10,
-        width=10,
-        color=Color.BLUE
-    )
-
-
-class CursorManagerTestCase(unittest.IsolatedAsyncioTestCase):
-
-    def setUp(self):
-        CursorManager.cursor_dict = {
-            "example_1": get_cur("example_1"),
-            "example_2": get_cur("example_2"),
-            "example_3": get_cur("example_3")
-        }
-
+class CursorEventHandler_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     def tearDown(self):
-        CursorManager.cursor_dict = {}
+        CursorHandler.cursor_dict = {}
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
 
-    def test_create(self):
-        conn_id = "example_conn_id"
-        CursorManager.create(conn_id)
-
-        self.assertIn(conn_id, CursorManager.cursor_dict)
-        self.assertEqual(type(CursorManager.cursor_dict[conn_id]), Cursor)
-        self.assertEqual(CursorManager.cursor_dict[conn_id].conn_id, conn_id)
-
-    def test_remove(self):
-        CursorManager.remove("example_1")
-        self.assertNotIn("example_1", CursorManager.cursor_dict)
-        self.assertEqual(len(CursorManager.cursor_dict), 2)
-
-    def test_exists_range(self):
-        result = CursorManager.exists_range(Point(0, 0), Point(0, 0))
-
-        self.assertEqual(len(result), 3)
-
-    def test_view_includes(self):
-        result = CursorManager.view_includes(Point(0, 0))
-
-        self.assertEqual(len(result), 3)
-
-
-class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     @patch("event.EventBroker.publish")
     async def test_new_conn_receive_without_cursors(self, mock: AsyncMock):
         """
@@ -121,7 +77,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         """
 
         # 초기 커서 셋팅
-        CursorManager.cursor_dict = {}
+        CursorHandler.cursor_dict = {}
 
         # 생성될 커서 값
         expected_conn_id = "example"
@@ -139,7 +95,7 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         )
 
         # trigger event
-        await CursorManager.receive_new_conn(message)
+        await CursorEventHandler.receive_new_conn(message)
 
         # 호출 여부
         self.assertEqual(len(mock.mock_calls), 1)
@@ -165,56 +121,111 @@ class CursorManager_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
     @patch("event.EventBroker.publish")
     async def test_receive_new_conn_with_cursors(self, mock: AsyncMock):
-        # TODO: 쿼리 로직 바뀌면 이것도 같이 바꿔야 함.
-        CursorManager.cursor_dict = {
-            "some id": Cursor.create("some id")
+        # /docs/example/cursor-location.png
+        # But B is at 0,0
+        CursorHandler.cursor_dict = {
+            "A": Cursor(
+                conn_id="A",
+                position=Point(-3, 3),
+                pointer=None,
+                height=6,
+                width=6,
+                # color 중요. 이따 비교에 써야 함.
+                color=Color.RED
+            ),
+            "C": Cursor(
+                conn_id="C",
+                position=Point(2, -1),
+                pointer=None,
+                height=4,
+                width=4,
+                # color 중요.
+                color=Color.BLUE
+            )
         }
 
-        expected_conn_id = "example"
-        expected_height = 100
-        expected_width = 100
+        original_cursors_len = 2
+        original_cursors = [c.conn_id for c in list(CursorHandler.cursor_dict.values())]
+
+        new_conn_id = "B"
+        height = 7
+        width = 7
 
         message = Message(
             event=NewConnEvent.NEW_CONN,
             payload=NewConnPayload(
-                conn_id=expected_conn_id,
-                width=expected_width,
-                height=expected_height
+                conn_id=new_conn_id,
+                width=height,
+                height=width
             )
         )
 
-        await CursorManager.receive_new_conn(message)
+        await CursorEventHandler.receive_new_conn(message)
 
+        # publish 횟수
         self.assertEqual(len(mock.mock_calls), 3)
+
+        # my-cursor
         got = mock.mock_calls[0].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, "multicast")
-
+        # target_conns 나인지 확인
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
-        self.assertEqual(got.header["target_conns"][0], expected_conn_id)
+        self.assertEqual(got.header["target_conns"][0], new_conn_id)
+        # origin_event 확인
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.MY_CURSOR)
+        # payload 확인
+        self.assertEqual(type(got.payload), MyCursorPayload)
+        self.assertEqual(got.payload.position, Point(0, 0))
+        self.assertIsNone(got.payload.pointer)
+        self.assertIn(got.payload.color, Color)
 
+        my_color = got.payload.color
+
+        # 커서 본인에게 보내는 cursors
         got = mock.mock_calls[1].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, "multicast")
-
+        # target_conns 나인지 확인
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
-        self.assertEqual(got.header["target_conns"][0], expected_conn_id)
+        self.assertEqual(got.header["target_conns"][0], new_conn_id)
+        # origin_event 확인
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.CURSORS)
+        # payload 확인
+        self.assertEqual(type(got.payload), CursorsPayload)
+        self.assertEqual(len(got.payload.cursors), 2)
+        self.assertEqual(got.payload.cursors[0].color, Color.RED)
+        self.assertEqual(got.payload.cursors[1].color, Color.BLUE)
 
+        # 다른 커서들에게 보내는 cursors
         got = mock.mock_calls[2].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, "multicast")
-
+        # target_conns 필터링 잘 됐는지 확인
         self.assertIn("target_conns", got.header)
-        self.assertEqual(len(got.header["target_conns"]), len(CursorManager.cursor_dict) - 1)
-        self.assertEqual(set(got.header["target_conns"]), set([c.conn_id for c in CursorManager.cursor_dict.values() if c.conn_id != expected_conn_id]))
+        self.assertEqual(len(got.header["target_conns"]), original_cursors_len)
+        self.assertEqual(set(got.header["target_conns"]), set(original_cursors))
+        # origin_event 확인
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.CURSORS)
+        # payload 확인
+        self.assertEqual(type(got.payload), CursorsPayload)
+        self.assertEqual(len(got.payload.cursors), 1)
+        self.assertEqual(got.payload.cursors[0].color, my_color)
+
+        # 연관관계 확인
+        b_watching_list = CursorHandler.get_watching(new_conn_id)
+        self.assertEqual(len(b_watching_list), original_cursors_len)
+
+        b_watcher_list = CursorHandler.get_watchers(new_conn_id)
+        self.assertEqual(len(b_watcher_list), original_cursors_len)
 
 
-class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
+class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     @patch("event.EventBroker.publish")
     async def test_receive_pointing(self, mock: AsyncMock):
         expected_conn_id = "example"
@@ -224,7 +235,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         cursor = Cursor.create(conn_id=expected_conn_id)
         cursor.set_size(expected_width, expected_height)
 
-        CursorManager.cursor_dict = {
+        CursorHandler.cursor_dict = {
             expected_conn_id: cursor
         }
 
@@ -240,7 +251,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-        await CursorManager.receive_pointing(message)
+        await CursorEventHandler.receive_pointing(message)
 
         # try-pointing 발행하는지 확인
         mock.assert_called_once()
@@ -267,7 +278,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         cursor = Cursor.create(conn_id=expected_conn_id)
         cursor.pointer = Point(0, 0)
 
-        CursorManager.cursor_dict = {
+        CursorHandler.cursor_dict = {
             expected_conn_id: cursor
         }
 
@@ -277,11 +288,11 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
             header={"receiver": expected_conn_id},
             payload=PointingResultPayload(
                 pointer=pointer,
-                pointable=True,
+                pointable=True
             )
         )
 
-        await CursorManager.receive_pointing_result(message)
+        await CursorEventHandler.receive_pointing_result(message)
 
         # pointer-set 발행하는지 확인
         mock.assert_called_once()
@@ -300,7 +311,6 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(got.payload.color, cursor.color)
         self.assertEqual(got.payload.new_position, pointer)
 
-        # 포인터 위치 업데이트 됨
         self.assertEqual(cursor.pointer, pointer)
 
     @patch("event.EventBroker.publish")
@@ -311,7 +321,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         cursor.pointer = Point(0, 0)
 
         pointer = Point(1, 0)
-        CursorManager.cursor_dict = {
+        CursorHandler.cursor_dict = {
             expected_conn_id: cursor
         }
 
@@ -320,11 +330,11 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
             header={"receiver": expected_conn_id},
             payload=PointingResultPayload(
                 pointer=pointer,
-                pointable=False,
+                pointable=False
             )
         )
 
-        await CursorManager.receive_pointing_result(message)
+        await CursorEventHandler.receive_pointing_result(message)
 
         # pointer-set 발행하는지 확인
         mock.assert_called_once()
@@ -352,7 +362,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
         cursor = Cursor.create(conn_id=expected_conn_id)
 
-        CursorManager.cursor_dict = {
+        CursorHandler.cursor_dict = {
             expected_conn_id: cursor
         }
 
@@ -366,7 +376,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-        await CursorManager.receive_pointing_result(message)
+        await CursorEventHandler.receive_pointing_result(message)
 
         # pointer-set 발행하는지 확인
         mock.assert_called_once()
@@ -386,7 +396,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(got.payload.new_position, pointer)
 
 
-class CursorManager_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
+class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     """
     TODO: 테스트 케이스
     1. 자기 자신 위치로 이동
@@ -398,12 +408,12 @@ class CursorManager_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
         self.cursor = Cursor.create(conn_id=self.conn_id)
 
-        CursorManager.cursor_dict = {
+        CursorHandler.cursor_dict = {
             self.conn_id: self.cursor
         }
 
     def tearDown(self):
-        CursorManager.cursor_dict = {}
+        CursorHandler.cursor_dict = {}
 
     @patch("event.EventBroker.publish")
     async def test_receive_moving(self, mock: AsyncMock):
@@ -419,7 +429,7 @@ class CursorManager_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-        await CursorManager.receive_moving(message)
+        await CursorEventHandler.receive_moving(message)
 
         # check-movable 이벤트 발행 확인
         mock.assert_called_once()

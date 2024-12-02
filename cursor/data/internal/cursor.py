@@ -16,6 +16,16 @@ class Cursor:
         self.width = width
         self.height = height
 
+    def check_in_view(self, p: Point):
+        leftmost = self.position.x - self.width
+        rightmost = self.position.x + self.width
+        top = self.position.y + self.height
+        bottom = self.position.y - self.height
+
+        return \
+            p.x >= leftmost and p.x <= rightmost and \
+            p.y >= bottom and p.y <= top
+
     def check_interactable(self, p: Point) -> bool:
         """
         p가 커서의 인터랙션 범위에 포함되는지 확인한다.
