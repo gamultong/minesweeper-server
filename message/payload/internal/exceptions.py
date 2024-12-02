@@ -1,4 +1,4 @@
-class InvalidFieldException(BaseException):
+class InvalidFieldException(Exception):
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -18,7 +18,7 @@ class InvalidFieldException(BaseException):
         return self.value
 
 
-class MissingFieldException(BaseException):
+class MissingFieldException(Exception):
     def __init__(self, key, value=None):
         self.key = key
         self.value = value
@@ -33,6 +33,6 @@ class MissingFieldException(BaseException):
         return self.key
 
 
-class DumbHumanException(BaseException):
+class DumbHumanException(Exception):
     def __repr__(self):
         return "worng use"
