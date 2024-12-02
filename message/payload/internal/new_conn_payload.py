@@ -2,6 +2,7 @@ from board import Point
 from cursor import Color
 from dataclasses import dataclass
 from .base_payload import Payload
+from .parsable_payload import ParsablePayload
 from enum import Enum
 
 
@@ -20,8 +21,8 @@ class NewConnPayload(Payload):
 
 @dataclass
 class CursorPayload(Payload):
-    position: Point
-    pointer: Point | None
+    position: ParsablePayload[Point]
+    pointer: ParsablePayload[Point] | None
     color: Color
 
 
