@@ -10,7 +10,7 @@ class CursorEventHandler:
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
     async def receive_new_conn(message: Message[NewConnPayload]):
-        cursor = CursorHandler.create(message.payload.conn_id)
+        cursor = CursorHandler.create_cursor(message.payload.conn_id)
         cursor.set_size(message.payload.width, message.payload.height)
 
         new_cursor_message = Message(
