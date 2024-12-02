@@ -1,10 +1,10 @@
 from message import Message, InvalidEventTypeException
 from message.payload import Payload, FetchTilesPayload, TilesPayload
 from .message_testdata import FETCH_TILES_EXAMPLE, INVALID_EVENT_EXAMPLE, TILES_EXAMPLE
+from board.data import Point
 
 import unittest
 import json
-from board import Point
 
 
 class MessageTestCase(unittest.TestCase):

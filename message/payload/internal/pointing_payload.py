@@ -1,6 +1,6 @@
 from .parsable_payload import ParsablePayload
 from .base_payload import Payload
-from board import Point
+from board.data import Point
 from dataclasses import dataclass
 from cursor.data import Color
 from enum import Enum

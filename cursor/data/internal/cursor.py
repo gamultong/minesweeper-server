@@ -1,4 +1,4 @@
-from board import Point
+from board.data import Point
 from .color import Color
 from dataclasses import dataclass
 

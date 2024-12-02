@@ -8,8 +8,9 @@ if __name__ == "__main__":
     from event.test import *
 
     # board
-    from board.test import *
-    from board.handler.test import *
+    from board.data.test import *
+    from board.data.handler.test import *
+    from board.event.handler.test import *
 
     # conn
     from conn.test import *

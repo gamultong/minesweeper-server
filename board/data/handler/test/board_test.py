@@ -1,6 +1,7 @@
 import unittest
 from tests.utils import cases
-from board import Point, Board
+from board.data import Point
+from board.data.handler import BoardHandler
 from .fixtures import setup_board
 
 FETCH_CASE = \
@@ -32,7 +33,7 @@ FETCH_CASE = \
     ]
 
 
-class BoardTestCase(unittest.TestCase):
+class BoardHandlerTestCase(unittest.TestCase):
     def setUp(self):
         setup_board()
 
@@ -41,7 +42,7 @@ class BoardTestCase(unittest.TestCase):
         start_p = data["start_p"]
         end_p = data["end_p"]
 
-        data = Board.fetch(start_p, end_p)
+        data = BoardHandler.fetch(start_p, end_p)
 
         self.assertEqual(data,  expect)
 

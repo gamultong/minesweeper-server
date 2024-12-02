@@ -1,4 +1,4 @@
-from board import Point
+from board.data import Point
 from dataclasses import dataclass
 from .base_payload import Payload
 from .parsable_payload import ParsablePayload
@@ -14,6 +14,7 @@ class TilesEvent(str, Enum):
 class FetchTilesPayload(Payload):
     start_p: ParsablePayload[Point]
     end_p: ParsablePayload[Point]
+
 
 @dataclass
 class TilesPayload(Payload):

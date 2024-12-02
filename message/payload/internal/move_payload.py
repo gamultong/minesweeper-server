@@ -1,4 +1,4 @@
-from board import Point
+from board.data import Point
 from cursor.data import Color
 from dataclasses import dataclass
 from .base_payload import Payload

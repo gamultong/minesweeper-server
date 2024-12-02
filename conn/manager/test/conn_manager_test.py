@@ -8,7 +8,7 @@ from message import Message
 from message.payload import TilesPayload, NewConnEvent, NewConnPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
-from board import Point
+from board.data import Point
 
 
 class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):

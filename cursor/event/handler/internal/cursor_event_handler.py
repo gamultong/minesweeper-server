@@ -1,6 +1,6 @@
 from cursor.data import Cursor
 from cursor.data.handler import CursorHandler
-from board import Point
+from board.data import Point
 from event import EventBroker
 from message import Message
 from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent, MoveEvent, MovingPayload, CheckMovablePayload

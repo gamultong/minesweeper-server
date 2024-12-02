@@ -6,7 +6,7 @@ from cursor.data.handler import (
     NotWatchableException,
     NotWatchingException
 )
-from board import Point
+from board.data import Point
 import unittest
 
 
