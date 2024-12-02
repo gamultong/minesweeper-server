@@ -36,7 +36,6 @@ def get_cur(conn_id):
         conn_id=conn_id,
         position=Point(0, 0),
         pointer=None,
-        new_pointer=None,
         height=10,
         width=10,
         color=Color.BLUE
@@ -230,35 +229,36 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         }
 
         click_type = ClickType.GENERAL_CLICK
+        pointer = Point(0, 0)
 
         message = Message(
             event=PointEvent.POINTING,
             header={"sender": expected_conn_id},
             payload=PointingPayload(
                 click_type=click_type,
-                position=Point(0, 0)
+                position=pointer
             )
         )
 
         await CursorManager.receive_pointing(message)
 
+        # try-pointing 발행하는지 확인
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, PointEvent.TRY_POINTING)
 
+        # sender 확인
         self.assertIn("sender", got.header)
         self.assertEqual(type(got.header["sender"]), str)
         self.assertEqual(got.header["sender"], expected_conn_id)
 
+        # payload 확인
         self.assertEqual(type(got.payload), TryPointingPayload)
         self.assertEqual(got.payload.click_type, click_type)
         self.assertEqual(got.payload.cursor_position, cursor.position)
         self.assertEqual(got.payload.color, cursor.color)
         self.assertEqual(got.payload.new_pointer, Point(0, 0))
-
-        self.assertEqual(cursor.new_pointer, message.payload.position)
 
     @patch("event.EventBroker.publish")
     async def test_receive_pointing_result_pointable(self, mock: AsyncMock):
@@ -266,39 +266,42 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
         cursor = Cursor.create(conn_id=expected_conn_id)
         cursor.pointer = Point(0, 0)
-        cursor.new_pointer = Point(0, 0)
 
         CursorManager.cursor_dict = {
             expected_conn_id: cursor
         }
 
+        pointer = Point(1, 0)
         message = Message(
             event=PointEvent.POINTING_RESULT,
             header={"receiver": expected_conn_id},
             payload=PointingResultPayload(
+                pointer=pointer,
                 pointable=True,
             )
         )
 
         await CursorManager.receive_pointing_result(message)
 
+        # pointer-set 발행하는지 확인
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, PointEvent.POINTER_SET)
 
+        # target_conns -> 본인에게 보내는지 확인
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
         self.assertEqual(got.header["target_conns"][0], expected_conn_id)
 
+        # payload 확인
         self.assertEqual(type(got.payload), PointerSetPayload)
         self.assertEqual(got.payload.origin_position, Point(0, 0))
         self.assertEqual(got.payload.color, cursor.color)
-        self.assertEqual(got.payload.new_position, Point(0, 0))
+        self.assertEqual(got.payload.new_position, pointer)
 
-        self.assertEqual(cursor.pointer, got.payload.new_position)
-        self.assertIsNone(cursor.new_pointer)
+        # 포인터 위치 업데이트 됨
+        self.assertEqual(cursor.pointer, pointer)
 
     @patch("event.EventBroker.publish")
     async def test_receive_pointing_result_not_pointable(self, mock: AsyncMock):
@@ -307,6 +310,7 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
         cursor = Cursor.create(conn_id=expected_conn_id)
         cursor.pointer = Point(0, 0)
 
+        pointer = Point(1, 0)
         CursorManager.cursor_dict = {
             expected_conn_id: cursor
         }
@@ -315,62 +319,71 @@ class CursorManager_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
             event=PointEvent.POINTING_RESULT,
             header={"receiver": expected_conn_id},
             payload=PointingResultPayload(
+                pointer=pointer,
                 pointable=False,
             )
         )
 
         await CursorManager.receive_pointing_result(message)
 
+        # pointer-set 발행하는지 확인
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, PointEvent.POINTER_SET)
 
+        # target_conns -> 본인에게 보내는지 확인
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
         self.assertEqual(got.header["target_conns"][0], expected_conn_id)
 
+        # payload 확인
         self.assertEqual(type(got.payload), PointerSetPayload)
         self.assertEqual(got.payload.origin_position, Point(0, 0))
         self.assertEqual(got.payload.color, cursor.color)
         self.assertIsNone(got.payload.new_position)
+
+        # 포인터 위치 업데이트 되지 않음
+        self.assertNotEqual(cursor.pointer, pointer)
 
     @patch("event.EventBroker.publish")
     async def test_receive_pointing_result_pointable_no_original_pointer(self, mock: AsyncMock):
         expected_conn_id = "example"
 
         cursor = Cursor.create(conn_id=expected_conn_id)
-        cursor.new_pointer = Point(0, 0)
 
         CursorManager.cursor_dict = {
             expected_conn_id: cursor
         }
 
+        pointer = Point(1, 0)
         message = Message(
             event=PointEvent.POINTING_RESULT,
             header={"receiver": expected_conn_id},
             payload=PointingResultPayload(
+                pointer=pointer,
                 pointable=True,
             )
         )
 
         await CursorManager.receive_pointing_result(message)
 
+        # pointer-set 발행하는지 확인
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, PointEvent.POINTER_SET)
 
+        # target_conns -> 본인에게 보내는지 확인
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
         self.assertEqual(got.header["target_conns"][0], expected_conn_id)
 
+        # payload 확인
         self.assertEqual(type(got.payload), PointerSetPayload)
         self.assertIsNone(got.payload.origin_position)
         self.assertEqual(got.payload.color, cursor.color)
-        self.assertEqual(got.payload.new_position, Point(0, 0))
+        self.assertEqual(got.payload.new_position, pointer)
 
 
 class CursorManager_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):

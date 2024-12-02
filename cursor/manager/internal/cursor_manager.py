@@ -125,6 +125,7 @@ class CursorManager:
         new_pointer = message.payload.position
 
         # 뷰 바운더리 안에서 포인팅하는지 확인
+        # TODO: 커서 내부 메서드로 바꾸기
         left_up_edge = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
         right_down_edge = Point(cursor.position.x + cursor.width, cursor.position.y - cursor.height)
         if \
@@ -134,8 +135,6 @@ class CursorManager:
                 new_pointer.y < right_down_edge.y:
             # TODO: 예외 처리
             raise "커서 뷰 바운더리 벗어난 곳에 포인팅함"
-
-        cursor.new_pointer = new_pointer
 
         message = Message(
             event=PointEvent.TRY_POINTING,
@@ -183,11 +182,9 @@ class CursorManager:
 
         cursor = CursorManager.cursor_dict[receiver]
 
-        new_pointer = cursor.new_pointer if message.payload.pointable else None
+        new_pointer = message.payload.pointer if message.payload.pointable else None
         origin_pointer = cursor.pointer
-
         cursor.pointer = new_pointer
-        cursor.new_pointer = None
 
         message = Message(
             event=PointEvent.POINTER_SET,

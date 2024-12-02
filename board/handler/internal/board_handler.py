@@ -57,8 +57,7 @@ class BoardHandler():
     @EventBroker.add_receiver(PointEvent.TRY_POINTING)
     @staticmethod
     async def receive_try_pointing(message: Message[TryPointingPayload]):
-        pointer_x = message.payload.new_pointer.x
-        pointer_y = message.payload.new_pointer.y
+        pointer = message.payload.new_pointer
 
         if "sender" not in message.header:
             raise "header 없음"
@@ -66,21 +65,23 @@ class BoardHandler():
         sender = message.header["sender"]
 
         tiles = Board.fetch(
-            Point(pointer_x-1, pointer_y+1),
-            Point(pointer_x+1, pointer_y-1)
+            Point(pointer.x-1, pointer.y+1),
+            Point(pointer.x+1, pointer.y-1)
         )
+
         # TODO: TileState에 대한 enum이 생기면 그걸로 변경
         pointable = tiles.find("O") != -1
 
-        await EventBroker.publish(
-            Message(
-                event=PointEvent.POINTING_RESULT,
-                header={"receiver": sender},
-                payload=PointingResultPayload(
-                    pointable=pointable
-                )
+        message = Message(
+            event=PointEvent.POINTING_RESULT,
+            header={"receiver": sender},
+            payload=PointingResultPayload(
+                pointer=pointer,
+                pointable=pointable
             )
         )
+
+        await EventBroker.publish(message)
 
     @EventBroker.add_receiver(MoveEvent.CHECK_MOVABLE)
     @staticmethod
@@ -94,13 +95,13 @@ class BoardHandler():
         # TODO: TileState에 대한 enum이 생기면 그걸로 변경
         movable = tile == "O"
 
-        await EventBroker.publish(
-            Message(
-                event=MoveEvent.MOVABLE_RESULT,
-                header={"receiver": sender},
-                payload=MovableResultPayload(
-                    position=position,
-                    movable=movable
-                )
+        message = Message(
+            event=MoveEvent.MOVABLE_RESULT,
+            header={"receiver": sender},
+            payload=MovableResultPayload(
+                position=position,
+                movable=movable
             )
         )
+
+        await EventBroker.publish(message)

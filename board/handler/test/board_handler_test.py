@@ -127,11 +127,13 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
     @patch("event.EventBroker.publish")
     async def test_try_pointing(self, mock: AsyncMock):
         # TODO: pointable한 것과 pointable하지 않은 것 테스트 나누기
+        pointer = Point(0, 0)
+
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": "ayo"},
             payload=TryPointingPayload(
-                new_pointer=Point(0, 0),
+                new_pointer=pointer,
                 cursor_position=Point(0, 0),
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
@@ -140,18 +142,21 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
 
         await BoardHandler.receive_try_pointing(message)
 
+        # pointing-result 발행하는지 확인
         mock.assert_called_once()
         got: Message[PointingResultPayload] = mock.mock_calls[0].args[0]
-
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, PointEvent.POINTING_RESULT)
 
+        # receiver 값 확인
         self.assertEqual(len(got.header), 1)
         self.assertIn("receiver", got.header)
         self.assertEqual(got.header["receiver"], "ayo")
 
+        # payload 확인
         self.assertEqual(type(got.payload), PointingResultPayload)
         self.assertFalse(got.payload.pointable)
+        self.assertEqual(got.payload.pointer, pointer)
 
     @patch("event.EventBroker.publish")
     async def test_check_movable(self, mock: AsyncMock):
