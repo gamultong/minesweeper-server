@@ -2,7 +2,23 @@ from cursor.data import Cursor, Color
 from cursor.data.handler import CursorHandler
 from cursor.event.handler import CursorEventHandler
 from message import Message
-from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, CursorsPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType, MoveEvent, MovingPayload, CheckMovablePayload
+from message.payload import (
+    NewConnEvent,
+    NewConnPayload,
+    MyCursorPayload,
+    CursorsPayload,
+    PointEvent,
+    PointingPayload,
+    TryPointingPayload,
+    PointingResultPayload,
+    PointerSetPayload,
+    ClickType,
+    MoveEvent,
+    MovingPayload,
+    CheckMovablePayload,
+    MovableResultPayload,
+    MovedPayload,
+)
 import unittest
 from unittest.mock import AsyncMock, patch
 from board.data import Point
@@ -12,7 +28,7 @@ CursorEventHandler Test
 ----------------------------
 Test
 ✅ : test 통과
-❌ : test 실패 
+❌ : test 실패
 🖊️ : test 작성
 - new-conn-receiver
     - ✅| normal-case
@@ -47,7 +63,7 @@ class CursorEventHandler_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         trigger event ->
 
         - new-conn : message[NewConnPayload]
-            - header : 
+            - header :
                 - sender : conn_id
             - descrption :
                 connection 연결
@@ -397,34 +413,66 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
 
 
 class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
-    """
-    TODO: 테스트 케이스
-    1. 자기 자신 위치로 이동
-    2. 주변 8칸 벗어나게 이동
-    """
-
     def setUp(self):
-        self.conn_id = "example"
-
-        self.cursor = Cursor.create(conn_id=self.conn_id)
-
+        # /docs/example/cursor-location.png
         CursorHandler.cursor_dict = {
-            self.conn_id: self.cursor
+            "A": Cursor(
+                conn_id="A",
+                position=Point(-3, 3),
+                pointer=None,
+                height=6,
+                width=6,
+                color=Color.YELLOW
+            ),
+            "B": Cursor(
+                conn_id="B",
+                position=Point(-3, -4),
+                pointer=None,
+                height=7,
+                width=7,
+                color=Color.BLUE
+            ),
+            "C": Cursor(
+                conn_id="C",
+                position=Point(2, -1),
+                pointer=None,
+                height=4,
+                width=4,
+                color=Color.PURPLE
+            )
         }
+
+        self.cur_a = CursorHandler.cursor_dict["A"]
+        self.cur_b = CursorHandler.cursor_dict["B"]
+        self.cur_c = CursorHandler.cursor_dict["C"]
+
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
+
+        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_a)
+        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_c)
+        CursorHandler.add_watcher(watcher=self.cur_a, watching=self.cur_c)
 
     def tearDown(self):
         CursorHandler.cursor_dict = {}
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
 
     @patch("event.EventBroker.publish")
     async def test_receive_moving(self, mock: AsyncMock):
+        """
+        TODO: 테스트 케이스
+        1. 자기 자신 위치로 이동
+        2. 주변 8칸 벗어나게 이동
+        """
         message = Message(
             event=MoveEvent.MOVING,
-            header={"sender": self.conn_id},
+            header={"sender": self.cur_a.conn_id},
             payload=CheckMovablePayload(
                 position=Point(
                     # 위로 한칸 이동
-                    x=self.cursor.position.x,
-                    y=self.cursor.position.y + 1,
+                    x=self.cur_a.position.x,
+                    y=self.cur_a.position.y + 1,
                 )
             )
         )
@@ -440,11 +488,206 @@ class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCas
         # sender 보냈는지 확인
         self.assertIn("sender", got.header)
         self.assertEqual(type(got.header["sender"]), str)
-        self.assertEqual(got.header["sender"], self.conn_id)
+        self.assertEqual(got.header["sender"], self.cur_a.conn_id)
 
         # 새로운 위치에 대해 check-movable 발행하는지 확인
         self.assertEqual(type(got.payload), CheckMovablePayload)
         self.assertEqual(got.payload.position, message.payload.position)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_movable_result_not_movable(self, mock: AsyncMock):
+        message = Message(
+            event=MoveEvent.MOVABLE_RESULT,
+            header={"receiver": self.cur_a.conn_id},
+            payload=MovableResultPayload(
+                movable=False,
+                position=Point(0, 0)
+            )
+        )
+
+        await CursorEventHandler.receive_movable_result(message)
+
+        mock.assert_not_called()
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_movable_result_a_up(self, mock: AsyncMock):
+        """
+        A가 한 칸 위로 이동.
+        B, C에게 move 이벤트가 전달되고, B의 시야에서 사라진다.
+        """
+        original_position = self.cur_a.position
+        message = Message(
+            event=MoveEvent.MOVABLE_RESULT,
+            header={"receiver": self.cur_a.conn_id},
+            payload=MovableResultPayload(
+                movable=True,
+                position=Point(
+                    x=self.cur_a.position.x,
+                    y=self.cur_a.position.y + 1,
+                )
+            )
+        )
+
+        await CursorEventHandler.receive_movable_result(message)
+
+        # moved 이벤트만 발행됨
+        self.assertEqual(len(mock.mock_calls), 1)
+
+        # moved
+        got = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], MoveEvent.MOVED)
+        # target_conns 확인, [B]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertIn("B", got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), MovedPayload)
+        self.assertEqual(got.payload.origin_position, original_position)
+        self.assertEqual(got.payload.new_position, message.payload.position)
+        self.assertEqual(got.payload.color, self.cur_a.color)
+
+        # watcher 관계 확인
+        a_watchings = CursorHandler.get_watching("A")
+        self.assertEqual(len(a_watchings), 1)
+        self.assertIn("C", a_watchings)
+
+        a_watchers = CursorHandler.get_watchers("A")
+        self.assertEqual(len(a_watchers), 0)
+
+        b_watchings = CursorHandler.get_watching("B")
+        self.assertEqual(len(b_watchings), 1)
+        self.assertIn("C", b_watchings)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_movable_result_b_up_right(self, mock: AsyncMock):
+        """
+        B가 한 칸 위, 한 칸 오른쪽로 이동.
+        A, C의 뷰에 B가 추가된다.
+        """
+        original_position = self.cur_b.position
+        message = Message(
+            event=MoveEvent.MOVABLE_RESULT,
+            header={"receiver": self.cur_b.conn_id},
+            payload=MovableResultPayload(
+                movable=True,
+                position=Point(
+                    x=self.cur_b.position.x + 1,
+                    y=self.cur_b.position.y + 1,
+                )
+            )
+        )
+
+        await CursorEventHandler.receive_movable_result(message)
+
+        # cursors 이벤트만 발행됨
+        self.assertEqual(len(mock.mock_calls), 1)
+
+        # cursors
+        got = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.CURSORS)
+        # target_conns 확인, [A, C]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 2)
+        self.assertIn("A", got.header["target_conns"])
+        self.assertIn("C", got.header["target_conns"])
+        # payload 확인, B의 정보
+        self.assertEqual(type(got.payload), CursorsPayload)
+        self.assertEqual(len(got.payload.cursors), 1)
+        self.assertEqual(got.payload.cursors[0].position, message.payload.position)
+        self.assertEqual(got.payload.cursors[0].pointer, self.cur_b.pointer)
+        self.assertEqual(got.payload.cursors[0].color, self.cur_b.color)
+
+        # watcher 관계 확인
+        b_watchers = CursorHandler.get_watchers("B")
+        self.assertEqual(len(b_watchers), 2)
+        self.assertIn("A", b_watchers)
+        self.assertIn("C", b_watchers)
+
+        a_watchings = CursorHandler.get_watching("A")
+        self.assertEqual(len(a_watchings), 2)
+        self.assertIn("B", a_watchings)
+        self.assertIn("C", a_watchings)
+
+        c_watchings = CursorHandler.get_watching("C")
+        self.assertEqual(len(c_watchings), 1)
+        self.assertIn("B", c_watchings)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_movable_result_c_left(self, mock: AsyncMock):
+        """
+        C가 한 칸 왼쪽으로 이동.
+        C의 뷰에 A, B가 추가되고, A, B에 move가 발행된다.
+        """
+        original_position = self.cur_c.position
+        message = Message(
+            event=MoveEvent.MOVABLE_RESULT,
+            header={"receiver": self.cur_c.conn_id},
+            payload=MovableResultPayload(
+                movable=True,
+                position=Point(
+                    x=self.cur_c.position.x - 1,
+                    y=self.cur_c.position.y,
+                )
+            )
+        )
+
+        await CursorEventHandler.receive_movable_result(message)
+
+        # cursors, moved 이벤트 발행됨
+        self.assertEqual(len(mock.mock_calls), 2)
+
+        # cursors
+        got = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.CURSORS)
+        # target_conns 확인, [C]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertIn("C", got.header["target_conns"])
+        # payload 확인, A, B의 정보
+        self.assertEqual(type(got.payload), CursorsPayload)
+        self.assertEqual(len(got.payload.cursors), 2)
+        self.assertEqual(got.payload.cursors[0].position, self.cur_a.position)
+        self.assertEqual(got.payload.cursors[0].pointer, self.cur_a.pointer)
+        self.assertEqual(got.payload.cursors[0].color, self.cur_a.color)
+        self.assertEqual(got.payload.cursors[1].position, self.cur_b.position)
+        self.assertEqual(got.payload.cursors[1].pointer, self.cur_b.pointer)
+        self.assertEqual(got.payload.cursors[1].color, self.cur_b.color)
+
+        # moved
+        got = mock.mock_calls[1].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], MoveEvent.MOVED)
+        # target_conns 확인, [A, B]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 2)
+        self.assertIn("A", got.header["target_conns"])
+        self.assertIn("B", got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), MovedPayload)
+        self.assertEqual(got.payload.origin_position, original_position)
+        self.assertEqual(got.payload.new_position, message.payload.position)
+        self.assertEqual(got.payload.color, self.cur_c.color)
+
+        # watcher 관계 확인
+        c_watchings = CursorHandler.get_watching("C")
+        self.assertEqual(len(c_watchings), 2)
+        self.assertIn("A", c_watchings)
+        self.assertIn("B", c_watchings)
 
 
 if __name__ == "__main__":
