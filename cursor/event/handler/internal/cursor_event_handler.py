@@ -3,7 +3,23 @@ from cursor.data.handler import CursorHandler
 from board import Point
 from event import EventBroker
 from message import Message
-from message.payload import NewConnPayload, MyCursorPayload, CursorsPayload, CursorPayload, NewConnEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, PointEvent, MoveEvent, MovingPayload, CheckMovablePayload
+from message.payload import (
+    NewConnPayload,
+    MyCursorPayload,
+    CursorsPayload,
+    CursorPayload,
+    NewConnEvent,
+    PointingPayload,
+    TryPointingPayload,
+    PointingResultPayload,
+    PointerSetPayload,
+    PointEvent,
+    MoveEvent,
+    MovingPayload,
+    CheckMovablePayload,
+    MovableResultPayload,
+    MovedPayload
+)
 
 
 class CursorEventHandler:
@@ -83,6 +99,30 @@ class CursorEventHandler:
 
         await EventBroker.publish(message)
 
+    @EventBroker.add_receiver(PointEvent.POINTING_RESULT)
+    @staticmethod
+    async def receive_pointing_result(message: Message[PointingResultPayload]):
+        receiver = message.header["receiver"]
+
+        cursor = CursorHandler.get_cursor(receiver)
+
+        new_pointer = message.payload.pointer if message.payload.pointable else None
+        origin_pointer = cursor.pointer
+        cursor.pointer = new_pointer
+
+        # TODO: 이거 본인 보고있는 커서들한테 보내야 함.
+        message = Message(
+            event=PointEvent.POINTER_SET,
+            header={"target_conns": [cursor.conn_id]},
+            payload=PointerSetPayload(
+                origin_position=origin_pointer,
+                new_position=new_pointer,
+                color=cursor.color,
+            )
+        )
+
+        await EventBroker.publish(message)
+
     @EventBroker.add_receiver(MoveEvent.MOVING)
     @staticmethod
     async def receive_moving(message: Message[MovingPayload]):
@@ -109,28 +149,91 @@ class CursorEventHandler:
 
         await EventBroker.publish(message)
 
-    @EventBroker.add_receiver(PointEvent.POINTING_RESULT)
+    @EventBroker.add_receiver(MoveEvent.MOVABLE_RESULT)
     @staticmethod
-    async def receive_pointing_result(message: Message[PointingResultPayload]):
+    async def receive_movable_result(message: Message[MovableResultPayload]):
         receiver = message.header["receiver"]
 
         cursor = CursorHandler.get_cursor(receiver)
 
-        new_pointer = message.payload.pointer if message.payload.pointable else None
-        origin_pointer = cursor.pointer
-        cursor.pointer = new_pointer
+        if not message.payload.movable:
+            # TODO: 사용자에게 알리기?
+            return
 
-        message = Message(
-            event=PointEvent.POINTER_SET,
-            header={"target_conns": [cursor.conn_id]},
-            payload=PointerSetPayload(
-                origin_position=origin_pointer,
-                new_position=new_pointer,
-                color=cursor.color,
+        new_position = message.payload.position
+        original_position = cursor.position
+
+        cursor.position = new_position
+
+        # TODO: 새로운 방식으로 커서들 찾기. 최적화하기.
+        # set을 사용하면 제약이 있음.
+
+        # 새로운 뷰의 커서들 찾기
+        top_left = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
+        bottom_right = Point(cursor.position.x + cursor.width, cursor.position.y - cursor.height)
+        cursors_in_view = CursorHandler.exists_range(top_left, bottom_right, cursor.conn_id)
+
+        original_watching_ids = CursorHandler.get_watching(cursor_id=cursor.conn_id)
+        original_watchings = [CursorHandler.get_cursor(id) for id in original_watching_ids]
+
+        if len(original_watchings) > 0:
+            # 범위 벗어난 커서들 연관관계 해제
+            for watching in original_watchings:
+                in_view = cursor.check_in_view(watching.position)
+                if not in_view:
+                    CursorHandler.remove_watcher(watcher=cursor, watching=other_cursor)
+
+        new_watchings = list(filter(lambda c: c.conn_id not in original_watching_ids, cursors_in_view))
+        if len(new_watchings) > 0:
+            # 새로운 watching 커서들 연관관계 설정
+            for other_cursor in new_watchings:
+                CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+
+            # 새로운 커서들 전달
+            await publish_new_cursors_event(
+                target_cursors=[cursor],
+                cursors=new_watchings
             )
-        )
 
-        await EventBroker.publish(message)
+        # 새로운 위치를 바라보고 있는 커서들 찾기, 본인 제외
+        watchers_new_pos = CursorHandler.view_includes(new_position, cursor.conn_id)
+
+        original_watcher_ids = CursorHandler.get_watchers(cursor_id=cursor.conn_id)
+        original_watchers = [CursorHandler.get_cursor(id) for id in original_watcher_ids]
+
+        if len(original_watchers) > 0:
+            # moved 이벤트 전달
+            message = Message(
+                event="multicast",
+                header={
+                    "target_conns": original_watcher_ids,
+                    "origin_event": MoveEvent.MOVED,
+                },
+                payload=MovedPayload(
+                    origin_position=original_position,
+                    new_position=new_position,
+                    color=cursor.color,
+                )
+            )
+            await EventBroker.publish(message)
+
+            # 범위 벗어나면 watcher 제거
+            for watcher in original_watchers:
+                in_view = watcher.check_in_view(cursor.position)
+                if not in_view:
+                    CursorHandler.remove_watcher(watcher=watcher, watching=cursor)
+
+        new_watchers = list(filter(lambda c: c.conn_id not in original_watcher_ids, watchers_new_pos))
+        if len(new_watchers) > 0:
+            # 새로운 watcher 커서들 연관관계 설정
+            for other_cursor in new_watchers:
+                CursorHandler.add_watcher(watcher=other_cursor, watching=cursor)
+
+            # 새로운 커서들에게 본인 커서 전달
+            await publish_new_cursors_event(
+                target_cursors=new_watchers,
+                cursors=[cursor]
+            )
 
 
 async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):
