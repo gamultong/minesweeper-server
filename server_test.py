@@ -1,11 +1,13 @@
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocketDisconnect
+
 from server import app
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent
-from board.test.fixtures import setup_board
+from board.data.handler.test.fixtures import setup_board
+from board.data import Point
 from event import EventBroker
-from board import Point
+
 import unittest
 from unittest.mock import AsyncMock
 

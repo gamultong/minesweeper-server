@@ -1,16 +1,16 @@
-import unittest
-from unittest.mock import AsyncMock, patch
-from board.handler import BoardHandler
+from cursor.data import Color
+from board.data import Point
+from board.event.handler import BoardEventHandler
+from board.data.handler.test.fixtures import setup_board
 from message import Message
 from message.payload import \
     FetchTilesPayload, TilesEvent, TilesPayload, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, ClickType, MoveEvent, CheckMovablePayload, MovableResultPayload
-from board.test.fixtures import setup_board
-from board import Point
-from cursor.data import Color
 
+import unittest
+from unittest.mock import AsyncMock, patch
 
 """
-BoardHandler Test
+BoardEventHandler Test
 ----------------------------
 Test
 ✅ : test 통과
@@ -33,7 +33,7 @@ Test
 
 
 # fetch-tiles-receiver Test
-class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
+class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         setup_board()
@@ -72,7 +72,7 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
         )
 
         # trigger event
-        await BoardHandler.receive_fetch_tiles(message)
+        await BoardEventHandler.receive_fetch_tiles(message)
 
         # 호출 여부
         mock.assert_called_once()
@@ -105,7 +105,7 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
             payload=NewConnPayload(conn_id="not important", width=2, height=2)
         )
 
-        await BoardHandler.receive_new_conn(message)
+        await BoardEventHandler.receive_new_conn(message)
 
         mock.assert_called_once()
         got: Message[TilesPayload] = mock.mock_calls[0].args[0]
@@ -140,7 +140,7 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
             )
         )
 
-        await BoardHandler.receive_try_pointing(message)
+        await BoardEventHandler.receive_try_pointing(message)
 
         # pointing-result 발행하는지 확인
         mock.assert_called_once()
@@ -171,7 +171,7 @@ class BoardHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase)
             )
         )
 
-        await BoardHandler.receive_check_movable(message)
+        await BoardEventHandler.receive_check_movable(message)
 
         mock.assert_called_once()
         got: Message[MovableResultPayload] = mock.mock_calls[0].args[0]

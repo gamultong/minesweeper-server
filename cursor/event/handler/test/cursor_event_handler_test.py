@@ -5,7 +5,7 @@ from message import Message
 from message.payload import NewConnEvent, NewConnPayload, MyCursorPayload, CursorsPayload, PointEvent, PointingPayload, TryPointingPayload, PointingResultPayload, PointerSetPayload, ClickType, MoveEvent, MovingPayload, CheckMovablePayload
 import unittest
 from unittest.mock import AsyncMock, patch
-from board import Point
+from board.data import Point
 
 """
 CursorEventHandler Test

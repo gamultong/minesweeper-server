@@ -1,7 +1,6 @@
-from .point import Point
-from .section import Section
+from board.data import Point, Section
 
-DATA_PATH = "board/internal/boarddata"
+DATA_PATH = "board/data/handler/internal/boarddata"
 
 SECTION_1 = Section.from_str(Point(-1, 0), open(f"{DATA_PATH}/data1.txt", "r").read())
 SECTION_2 = Section.from_str(Point(0, 0), open(f"{DATA_PATH}/data2.txt", "r").read())
@@ -21,7 +20,7 @@ BOARD_DATA = \
     }
 
 
-class Board:
+class BoardHandler:
     # sections[y][x]
     sections: dict[int, dict[int, Section]] = BOARD_DATA
 
@@ -32,7 +31,7 @@ class Board:
         fetched = None
         for sec_y in range(start.y // Section.LENGTH, end.y // Section.LENGTH - 1, - 1):
             for sec_x in range(start.x // Section.LENGTH, end.x // Section.LENGTH + 1):
-                section = Board.sections[sec_y][sec_x]
+                section = BoardHandler.sections[sec_y][sec_x]
 
                 start_p = Point(
                     x=max(start.x, section.abs_x) - (section.abs_x),
@@ -54,9 +53,9 @@ class Board:
 
     @staticmethod
     def _debug():
-        for y in Board.sections:
-            for x in Board.sections[y]:
+        for y in BoardHandler.sections:
+            for x in BoardHandler.sections[y]:
                 print("=================================")
                 print(f"Section x :", x)
                 print(f"        y :", y)
-                Board.sections[y][x]._debug()
+                BoardHandler.sections[y][x]._debug()

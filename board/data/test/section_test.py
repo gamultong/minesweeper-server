@@ -1,6 +1,6 @@
 import unittest
 from tests.utils import cases
-from board import Section, Point
+from board.data import Section, Point
 
 
 # 테스트를 위해 Section.LENGTH를 4로 설정

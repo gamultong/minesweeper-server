@@ -1,4 +1,5 @@
-from board import Board, Section, Point
+from board.data import Section, Point
+from board.data.handler import BoardHandler
 
 """
  3   a s d f 1 2 3 4
@@ -22,7 +23,7 @@ def setup_board():
     SECTION_3 = Section.from_str(Point(-1, -1), "qwerqwerqwerqwer")
     SECTION_4 = Section.from_str(Point(0, -1), "5678567856785678")
 
-    Board.sections = \
+    BoardHandler.sections = \
         {
             0: {
                 0: SECTION_2,

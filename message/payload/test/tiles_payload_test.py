@@ -1,6 +1,6 @@
 import unittest
 
-from board.handler import Point
+from board.data import Point
 from message.payload import FetchTilesPayload, TilesPayload
 from .testdata.tiles_payload_testdata import EXAPLE_FETCH_TILES_DICT, EXAPLE_TILES_DICT
 

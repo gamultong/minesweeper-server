@@ -1,4 +1,4 @@
-from board import Point
+from board.data import Point
 from cursor.data import Cursor, Color
 from .cursor_exception import (
     AlreadyWatchingException,

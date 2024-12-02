@@ -1,16 +1,17 @@
 from event import EventBroker
-from board import Board, Point
+from board.data import Point
+from board.data.handler import BoardHandler
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, MoveEvent, CheckMovablePayload, MovableResultPayload
 
 
-class BoardHandler():
+class BoardEventHandler():
     @EventBroker.add_receiver(TilesEvent.FETCH_TILES)
     @staticmethod
     async def receive_fetch_tiles(message: Message[FetchTilesPayload]):
         sender = message.header["sender"]
 
-        tiles = Board.fetch(message.payload.start_p, message.payload.end_p)
+        tiles = BoardHandler.fetch(message.payload.start_p, message.payload.end_p)
 
         resp_message = Message(
             event="multicast",
@@ -38,7 +39,7 @@ class BoardHandler():
         start_p = Point(x=-width, y=height)
         end_p = Point(x=width, y=-height)
 
-        tiles = Board.fetch(start_p, end_p)
+        tiles = BoardHandler.fetch(start_p, end_p)
 
         # TODO: header 추가하기. 위 메서드도
         resp_message = Message(
@@ -64,7 +65,7 @@ class BoardHandler():
 
         sender = message.header["sender"]
 
-        tiles = Board.fetch(
+        tiles = BoardHandler.fetch(
             Point(pointer.x-1, pointer.y+1),
             Point(pointer.x+1, pointer.y-1)
         )
@@ -90,7 +91,7 @@ class BoardHandler():
 
         position = message.payload.position
 
-        tile = Board.fetch(start=position, end=position)[0]
+        tile = BoardHandler.fetch(start=position, end=position)[0]
 
         # TODO: TileState에 대한 enum이 생기면 그걸로 변경
         movable = tile == "O"
