@@ -26,7 +26,11 @@ class Cursor:
             p.x >= leftmost and p.x <= rightmost and \
             p.y >= bottom and p.y <= top
 
-    def check_interactable(self, p: Point):
+    def check_interactable(self, p: Point) -> bool:
+        """
+        p가 커서의 인터랙션 범위에 포함되는지 확인한다.
+        인터랙션 가능하면 True.
+        """
         return \
             p.x >= self.position.x - 1 and \
             p.x <= self.position.x + 1 and \
