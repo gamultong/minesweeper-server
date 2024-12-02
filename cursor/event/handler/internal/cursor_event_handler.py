@@ -37,39 +37,32 @@ class CursorEventHandler:
 
         cursors_in_range = CursorHandler.exists_range(start_p, end_p, cursor.conn_id)
         if len(cursors_in_range) > 0:
-            nearby_cursors_message = Message(
-                event="multicast",
-                header={"target_conns": [message.payload.conn_id],
-                        "origin_event": NewConnEvent.CURSORS},
-                payload=CursorsPayload(
-                    cursors=[
-                        CursorPayload(cur.position, cur.pointer, cur.color) for cur in cursors_in_range
-                    ]
-                )
-            )
+            # 내가 보고있는 커서들
+            for other_cursor in cursors_in_range:
+                CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
 
-            await EventBroker.publish(nearby_cursors_message)
+            await publish_new_cursors_event(
+                target_cursors=[cursor],
+                cursors=cursors_in_range
+            )
 
         cursors_with_view_including = CursorHandler.view_includes(cursor.position, cursor.conn_id)
         if len(cursors_with_view_including) > 0:
-            cursor_appeared_message = Message(
-                event="multicast",
-                header={"target_conns": [cursor.conn_id for cursor in cursors_with_view_including],
-                        "origin_event": NewConnEvent.CURSORS},
-                payload=CursorsPayload(
-                    cursors=[CursorPayload(cursor.position, cursor.pointer, cursor.color)]
-                )
-            )
+            # 나를 보고있는 커서들
+            for other_cursor in cursors_with_view_including:
+                CursorHandler.add_watcher(watcher=other_cursor, watching=cursor)
 
-            await EventBroker.publish(cursor_appeared_message)
+            await publish_new_cursors_event(
+                target_cursors=cursors_with_view_including,
+                cursors=[cursor]
+            )
 
     @EventBroker.add_receiver(PointEvent.POINTING)
     @staticmethod
     async def receive_pointing(message: Message[PointingPayload]):
         sender = message.header["sender"]
 
-        # TODO: get_cursor 메서드 만들기
-        cursor = CursorHandler.cursor_dict[sender]
+        cursor = CursorHandler.get_cursor(sender)
         new_pointer = message.payload.position
 
         # 뷰 바운더리 안에서 포인팅하는지 확인
@@ -103,8 +96,7 @@ class CursorEventHandler:
     async def receive_pointing_result(message: Message[PointingResultPayload]):
         receiver = message.header["receiver"]
 
-        # TODO: 여기도 마찬가지
-        cursor = CursorHandler.cursor_dict[receiver]
+        cursor = CursorHandler.get_cursor(receiver)
 
         new_pointer = message.payload.pointer if message.payload.pointable else None
         origin_pointer = cursor.pointer
@@ -121,3 +113,16 @@ class CursorEventHandler:
         )
 
         await EventBroker.publish(message)
+
+
+async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):
+    message = Message(
+        event="multicast",
+        header={"target_conns": [cursor.conn_id for cursor in target_cursors],
+                "origin_event": NewConnEvent.CURSORS},
+        payload=CursorsPayload(
+            cursors=[CursorPayload(cursor.position, cursor.pointer, cursor.color) for cursor in cursors]
+        )
+    )
+
+    await EventBroker.publish(message)
