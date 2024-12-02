@@ -44,7 +44,6 @@ class CursorTestCase(unittest.TestCase):
             conn_id="A",
             position=Point(-3, 3),
             pointer=None,
-            new_pointer=None,
             height=6,
             width=6,
             color=Color.BLUE
@@ -53,7 +52,6 @@ class CursorTestCase(unittest.TestCase):
             conn_id="B",
             position=Point(-3, -4),
             pointer=None,
-            new_pointer=None,
             height=7,
             width=7,
             color=Color.BLUE
@@ -62,7 +60,6 @@ class CursorTestCase(unittest.TestCase):
             conn_id="C",
             position=Point(2, -1),
             pointer=None,
-            new_pointer=None,
             height=4,
             width=4,
             color=Color.BLUE

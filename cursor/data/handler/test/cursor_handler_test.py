@@ -18,7 +18,6 @@ class CursorHandlerTestCase(unittest.IsolatedAsyncioTestCase):
                 conn_id="A",
                 position=Point(-3, 3),
                 pointer=None,
-                new_pointer=None,
                 height=6,
                 width=6,
                 color=Color.BLUE
@@ -27,7 +26,6 @@ class CursorHandlerTestCase(unittest.IsolatedAsyncioTestCase):
                 conn_id="B",
                 position=Point(-3, -4),
                 pointer=None,
-                new_pointer=None,
                 height=7,
                 width=7,
                 color=Color.BLUE
@@ -36,7 +34,6 @@ class CursorHandlerTestCase(unittest.IsolatedAsyncioTestCase):
                 conn_id="C",
                 position=Point(2, -1),
                 pointer=None,
-                new_pointer=None,
                 height=4,
                 width=4,
                 color=Color.BLUE
@@ -66,7 +63,6 @@ class CursorHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(a_cur.position.x, -3)
         self.assertEqual(a_cur.position.y, 3)
         self.assertIsNone(a_cur.pointer)
-        self.assertIsNone(a_cur.new_pointer)
         self.assertEqual(a_cur.height, 6)
         self.assertEqual(a_cur.width, 6)
         self.assertEqual(a_cur.color, Color.BLUE)
