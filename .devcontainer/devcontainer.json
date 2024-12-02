@@ -25,7 +25,8 @@
                 "ms-python.vscode-pylance",
                 "esbenp.prettier-vscode",
                 "github.vscode-github-actions",
-                "ms-azuretools.vscode-docker"
+                "ms-azuretools.vscode-docker",
+                "ms-vsliveshare.vsliveshare"
             ]
         }
     },
