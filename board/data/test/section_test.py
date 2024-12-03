@@ -84,7 +84,7 @@ class SectionTestCase(unittest.TestCase):
         # },
 
     def test_update_one(self):
-        value = Tiles(data=[b'A'])
+        value = Tiles(data=b'A')
 
         self.section.update(data=value, start=EXAMPLE_POINT)
 
@@ -96,14 +96,15 @@ class SectionTestCase(unittest.TestCase):
         cols = 3
 
         # 업데이트용 row * col 크기의 2D bytearray 생성
-        value = Tiles(data=[bytearray(f"{i}"*cols, "ascii") for i in range(rows)])
+        data = bytearray().join([bytearray(f"{i}"*cols, "ascii") for i in range(rows)])
+        value = Tiles(data)
         start = EXAMPLE_POINT
         end = Point(2, 1)
 
         self.section.update(data=value, start=start, end=end)
 
         got = self.section.fetch(start=start, end=end)
-        self.assertEqual(got, value)
+        self.assertEqual(got.data, value.data)
 
     def test_create(self):
         mine = Tile.create(

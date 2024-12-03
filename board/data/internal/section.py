@@ -18,11 +18,11 @@ class Section:
         # row 당 가져올 원소 개수 + 1
         x_gap = end.x - start.x + 1
 
-        result = []
+        result = bytearray()
         for y in range(start.y, end.y-1, -1):
             # (row 길이 * y의 실제 인덱스 위치) + x 오프셋
             idx_start = Section.LENGTH * (Section.LENGTH - y - 1) + start.x
-            result.append(self.data[idx_start: idx_start+x_gap])
+            result += self.data[idx_start: idx_start+x_gap]
 
         return Tiles(data=result)
 
@@ -31,14 +31,15 @@ class Section:
             end = start
 
         expected_len = (end.x - start.x + 1) * (start.y - end.y + 1)
-        if len(data.data)*len(data.data[0]) != expected_len:
+        if len(data.data) != expected_len:
             raise "예상 길이와 다름"
 
         x_gap = end.x - start.x + 1
 
         for y in range(start.y, end.y-1, -1):
             idx_start = Section.LENGTH * (Section.LENGTH - y - 1) + start.x
-            self.data[idx_start: idx_start+x_gap] = data.data[start.y-y][:]
+            offset = (start.y - y) * x_gap
+            self.data[idx_start: idx_start+x_gap] = data.data[offset: offset+x_gap]
 
     @property
     def abs_x(self):

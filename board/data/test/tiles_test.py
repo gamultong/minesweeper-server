@@ -5,7 +5,8 @@ import unittest
 
 class TilesTestCase(unittest.TestCase):
     def test_to_str(self):
-        tiles = Tiles(data=[bytearray("abc", "ascii") for _ in range(3)])
+        data = bytearray().join([bytearray("abc", "ascii") for _ in range(3)])
+        tiles = Tiles(data=data)
 
         s = tiles.to_str()
 
