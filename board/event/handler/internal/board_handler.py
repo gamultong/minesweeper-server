@@ -1,5 +1,5 @@
 from event import EventBroker
-from board.data import Point
+from board.data import Point, Tile
 from board.data.handler import BoardHandler
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, MoveEvent, CheckMovablePayload, MovableResultPayload
@@ -43,7 +43,6 @@ class BoardEventHandler():
         tiles = BoardHandler.fetch(start_p, end_p)
         tiles_str = tiles.to_str()
 
-        # TODO: header 추가하기. 위 메서드도
         resp_message = Message(
             event="multicast",
             header={"target_conns": [sender],
@@ -71,10 +70,13 @@ class BoardEventHandler():
             Point(pointer.x-1, pointer.y+1),
             Point(pointer.x+1, pointer.y-1)
         )
-        tiles_str = tiles.to_str()
 
-        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
-        pointable = tiles_str.find("O") != -1
+        pointable = False
+        for tile in tiles.data:
+            t = Tile.from_int(tile)
+            if t.is_open:
+                pointable = True
+                break
 
         message = Message(
             event=PointEvent.POINTING_RESULT,
@@ -94,11 +96,10 @@ class BoardEventHandler():
 
         position = message.payload.position
 
-        tile = BoardHandler.fetch(start=position, end=position)
-        tile = tile.to_str()[0]
+        tiles = BoardHandler.fetch(start=position, end=position)
+        tile = Tile.from_int(tiles.data[0])
 
-        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
-        movable = tile == "O"
+        movable = tile.is_open
 
         message = Message(
             event=MoveEvent.MOVABLE_RESULT,
