@@ -59,6 +59,7 @@ class Section:
         return
 
     def fetch(self, start: Point, end: Point | None = None) -> list[bytearray] | bytes:
+        # TODO: Tiles 반환하도록 통합
         if end:
             data = self[start.y:end.y][start.x:end.x+1]
         else:

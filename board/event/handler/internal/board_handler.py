@@ -12,6 +12,7 @@ class BoardEventHandler():
         sender = message.header["sender"]
 
         tiles = BoardHandler.fetch(message.payload.start_p, message.payload.end_p)
+        tiles_str = tiles.to_str()
 
         resp_message = Message(
             event="multicast",
@@ -22,7 +23,7 @@ class BoardEventHandler():
                               message.payload.start_p.y),
                 end_p=Point(message.payload.end_p.x,
                             message.payload.end_p.y),
-                tiles=tiles
+                tiles=tiles_str
             )
         )
 
@@ -40,6 +41,7 @@ class BoardEventHandler():
         end_p = Point(x=width, y=-height)
 
         tiles = BoardHandler.fetch(start_p, end_p)
+        tiles_str = tiles.to_str()
 
         # TODO: header 추가하기. 위 메서드도
         resp_message = Message(
@@ -49,7 +51,7 @@ class BoardEventHandler():
             payload=TilesPayload(
                 start_p=Point(start_p.x, start_p.y),
                 end_p=Point(end_p.x, end_p.y),
-                tiles=tiles
+                tiles=tiles_str
             )
         )
 
@@ -69,9 +71,10 @@ class BoardEventHandler():
             Point(pointer.x-1, pointer.y+1),
             Point(pointer.x+1, pointer.y-1)
         )
+        tiles_str = tiles.to_str()
 
         # TODO: TileState에 대한 enum이 생기면 그걸로 변경
-        pointable = tiles.find("O") != -1
+        pointable = tiles_str.find("O") != -1
 
         message = Message(
             event=PointEvent.POINTING_RESULT,
@@ -91,7 +94,8 @@ class BoardEventHandler():
 
         position = message.payload.position
 
-        tile = BoardHandler.fetch(start=position, end=position)[0]
+        tile = BoardHandler.fetch(start=position, end=position)
+        tile = tile.to_str()[0]
 
         # TODO: TileState에 대한 enum이 생기면 그걸로 변경
         movable = tile == "O"

@@ -42,7 +42,8 @@ class BoardHandlerTestCase(unittest.TestCase):
         start_p = data["start_p"]
         end_p = data["end_p"]
 
-        data = BoardHandler.fetch(start_p, end_p)
+        tiles = BoardHandler.fetch(start_p, end_p)
+        data = tiles.to_str()
 
         self.assertEqual(data,  expect)
 
