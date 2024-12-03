@@ -1,12 +1,12 @@
 import unittest
 from tests.utils import cases
-from board.data import Section, Point
+from board.data import Section, Point, Tile, Tiles
 
 
 # 테스트를 위해 Section.LENGTH를 4로 설정
 Section.LENGTH = 4
 
-EXAPMLE_SECTION_DATA = "asdfasdfadsfasdf"
+EXAPMLE_SECTION_DATA = "asdfASDFqwerQWER"
 
 EXAMPLE_POINT = Point(x=0, y=Section.LENGTH - 1)
 
@@ -49,7 +49,7 @@ class SectionTestCase(unittest.TestCase):
             data=EXAPMLE_SECTION_DATA
         )
 
-    def test_create(self):
+    def test_from_str(self):
         self.section = Section.from_str(
             p=EXAMPLE_POINT,
             data=EXAPMLE_SECTION_DATA
@@ -57,7 +57,7 @@ class SectionTestCase(unittest.TestCase):
 
         self.assertEqual(self.section.p, EXAMPLE_POINT)
 
-        data_length = sum(len(row) for row in self.section.data)
+        data_length = len(self.section.data)
         self.assertEqual(data_length, Section.LENGTH ** 2)
 
     @cases(FETCH_TEST_CASES)
@@ -67,11 +67,7 @@ class SectionTestCase(unittest.TestCase):
 
         data = self.section.fetch(start=start, end=end)
 
-        # list[bytearray]인 경우 1차원으로 flatten
-        if end is not None:
-            data = bytearray().join(data)
-
-        self.assertEqual(data.decode('ascii'), expect, desc)
+        self.assertEqual(data.to_str(), expect, desc)
 
     def test_fetch_out_of_range(self):
         pass
@@ -88,7 +84,7 @@ class SectionTestCase(unittest.TestCase):
         # },
 
     def test_update_one(self):
-        value = b'A'
+        value = Tiles(data=[b'A'])
 
         self.section.update(data=value, start=EXAMPLE_POINT)
 
@@ -100,7 +96,7 @@ class SectionTestCase(unittest.TestCase):
         cols = 3
 
         # 업데이트용 row * col 크기의 2D bytearray 생성
-        value = [bytearray(f"{i}"*cols, "ascii") for i in range(rows)]
+        value = Tiles(data=[bytearray(f"{i}"*cols, "ascii") for i in range(rows)])
         start = EXAMPLE_POINT
         end = Point(2, 1)
 
@@ -108,6 +104,32 @@ class SectionTestCase(unittest.TestCase):
 
         got = self.section.fetch(start=start, end=end)
         self.assertEqual(got, value)
+
+    def test_create(self):
+        mine = Tile.create(
+            is_open=False,
+            is_mine=True,
+            is_flag=False,
+            color=None,
+            number=None,
+        )
+        closed = Tile.create(
+            is_open=False,
+            is_mine=False,
+            is_flag=False,
+            color=None,
+            number=None,
+        )
+
+        sec = Section.create(Point(0, 0))
+
+        total = Section.LENGTH ** 2
+        tile_count = int((total * (1 - Section.MINE_RATIO))//1)
+        mine_count = total - tile_count
+
+        self.assertEqual(len(sec.data), total)
+        self.assertEqual(sec.data.count(mine.data), mine_count)
+        self.assertEqual(sec.data.count(closed.data), tile_count)
 
 
 if __name__ == "__main__":

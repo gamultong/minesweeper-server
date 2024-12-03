@@ -44,10 +44,10 @@ class BoardHandler:
 
                 fetched = section.fetch(start=start_p, end=end_p)
 
-                for y in range(len(fetched)):
-                    out.data[offset+y] += fetched[y]
+                for y in range(len(fetched.data)):
+                    out.data[offset+y] += fetched.data[y]
 
-            offset += len(fetched)
+            offset += len(fetched.data)
 
         return out
 
