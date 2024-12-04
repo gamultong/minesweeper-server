@@ -71,9 +71,6 @@ class Tile:
         if tile.is_open and tile.is_flag:
             raise InvalidTileException()
 
-        if tile.is_open and tile.is_flag:
-            raise InvalidTileException()
-
         return tile
 
 
