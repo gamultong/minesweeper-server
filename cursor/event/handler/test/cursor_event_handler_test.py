@@ -18,10 +18,14 @@ from message.payload import (
     CheckMovablePayload,
     MovableResultPayload,
     MovedPayload,
+    InteractionEvent,
+    TileStateChangedPayload,
+    YouDiedPayload,
+    TileUpdatedPayload
 )
 import unittest
 from unittest.mock import AsyncMock, patch
-from board.data import Point
+from board.data import Point, Tile
 
 """
 CursorEventHandler Test
@@ -724,6 +728,108 @@ class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCas
         self.assertEqual(len(c_watchings), 2)
         self.assertIn("A", c_watchings)
         self.assertIn("B", c_watchings)
+
+
+class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        # /docs/example/cursor-locations-mine.png
+        CursorHandler.cursor_dict = {
+            "A": Cursor(
+                conn_id="A",
+                position=Point(-3, 3),
+                pointer=None,
+                height=6,
+                width=6,
+                color=Color.YELLOW,
+                revive_at=None
+            ),
+            "B": Cursor(
+                conn_id="B",
+                position=Point(-3, -4),
+                pointer=None,
+                height=7,
+                width=7,
+                color=Color.BLUE,
+                revive_at=None
+            ),
+            "C": Cursor(
+                conn_id="C",
+                position=Point(2, -1),
+                pointer=None,
+                height=4,
+                width=4,
+                color=Color.PURPLE,
+                revive_at=None
+            )
+        }
+
+        self.cur_a = CursorHandler.cursor_dict["A"]
+        self.cur_b = CursorHandler.cursor_dict["B"]
+        self.cur_c = CursorHandler.cursor_dict["C"]
+
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
+
+        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_a)
+        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_c)
+        CursorHandler.add_watcher(watcher=self.cur_a, watching=self.cur_c)
+
+    def tearDown(self):
+        CursorHandler.cursor_dict = {}
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_tile_state_changed(self, mock: AsyncMock):
+        position = Point(-4, -3)
+        tile = Tile(0b01000000)
+        message: Message[TileStateChangedPayload] = Message(
+            event=InteractionEvent.TILE_STATE_CHANGED,
+            payload=TileStateChangedPayload(
+                position=position,
+                tile=tile
+            )
+        )
+
+        await CursorEventHandler.receive_tile_state_changed(message)
+
+        # tile-updated, you-died 발행 확인
+        self.assertEqual(len(mock.mock_calls), 2)
+
+        # tile-updated
+        got: Message[TileUpdatedPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], InteractionEvent.TILE_STATE_CHANGED)
+        # target_conns 확인, [A, B]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 2)
+        self.assertIn("A", got.header["target_conns"])
+        self.assertIn("B", got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), TileUpdatedPayload)
+        self.assertEqual(got.payload.position, position)
+        self.assertEqual(got.payload.tile.data, tile.data & 0b10111000)
+
+        # you-died
+        got: Message[YouDiedPayload] = mock.mock_calls[1].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], InteractionEvent.YOU_DIED)
+        # target_conns 확인, [B]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertIn("B", got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), YouDiedPayload)
+        # TODO
+        # datetime.now mocking 후 test
+        # self.assertEqual(got.payload.revive_at, something)
 
 
 if __name__ == "__main__":
