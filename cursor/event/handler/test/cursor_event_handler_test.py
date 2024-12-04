@@ -782,7 +782,43 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
     @patch("event.EventBroker.publish")
     async def test_receive_tile_state_changed(self, mock: AsyncMock):
         position = Point(-4, -3)
-        tile = Tile(0b01000000)
+        tile = Tile.from_int(0b00100111)  # not open, flag, 7
+
+        message: Message[TileStateChangedPayload] = Message(
+            event=InteractionEvent.TILE_STATE_CHANGED,
+            payload=TileStateChangedPayload(
+                position=position,
+                tile=tile
+            )
+        )
+
+        await CursorEventHandler.receive_tile_state_changed(message)
+
+        # tile-updated 발행 확인
+        self.assertEqual(len(mock.mock_calls), 1)
+
+        # tile-updated
+        got: Message[TileUpdatedPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], InteractionEvent.TILE_UPDATED)
+        # target_conns 확인, [A, B]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 2)
+        self.assertIn("A", got.header["target_conns"])
+        self.assertIn("B", got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), TileUpdatedPayload)
+        self.assertEqual(got.payload.position, position)
+        self.assertEqual(got.payload.tile.data, tile.data & 0b10111000)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_tile_state_changed_mine_boom(self, mock: AsyncMock):
+        position = Point(-4, -3)
+        tile = Tile.from_int(0b11000000)  # open, mine
+
         message: Message[TileStateChangedPayload] = Message(
             event=InteractionEvent.TILE_STATE_CHANGED,
             payload=TileStateChangedPayload(
@@ -802,7 +838,7 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
         self.assertEqual(got.event, "multicast")
         # origin_event
         self.assertIn("origin_event", got.header)
-        self.assertEqual(got.header["origin_event"], InteractionEvent.TILE_STATE_CHANGED)
+        self.assertEqual(got.header["origin_event"], InteractionEvent.TILE_UPDATED)
         # target_conns 확인, [A, B]
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 2)
@@ -811,7 +847,7 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
         # payload 확인
         self.assertEqual(type(got.payload), TileUpdatedPayload)
         self.assertEqual(got.payload.position, position)
-        self.assertEqual(got.payload.tile.data, tile.data & 0b10111000)
+        self.assertEqual(got.payload.tile.data, tile.data)
 
         # you-died
         got: Message[YouDiedPayload] = mock.mock_calls[1].args[0]

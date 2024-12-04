@@ -249,46 +249,51 @@ class CursorEventHandler:
     @EventBroker.add_receiver(InteractionEvent.TILE_STATE_CHANGED)
     @staticmethod
     async def receive_tile_state_changed(message: Message[TileStateChangedPayload]):
-        view_cursors = CursorHandler.view_includes(message.payload.position)
+        position = message.payload.position
+        tile = message.payload.tile
 
-        if message.payload.tile.is_open:
-            tile = Tile.from_int(message.payload.tile.data)
-        else:
-            tile = Tile.from_int(message.payload.tile.data & 0b10111000)
+        pub_tile = tile
+        if not tile.is_open:
+            # 닫힌 타일의 mine, number 정보는 버리기
+            pub_tile = Tile.from_int(tile.data & 0b10111000)
 
-        message = Message(
-            event="multicast",
-            header={"target_conns": [cur.conn_id for cur in view_cursors],
-                    "origin_event": InteractionEvent.TILE_UPDATED},
-            payload=TileUpdatedPayload(
-                position=message.payload.position,
-                tile=tile
+        # 변경된 타일을 보고있는 커서들에게 전달
+        view_cursors = CursorHandler.view_includes(position)
+        if len(view_cursors) > 0:
+            pub_message = Message(
+                event="multicast",
+                header={"target_conns": [c.conn_id for c in view_cursors],
+                        "origin_event": InteractionEvent.TILE_UPDATED},
+                payload=TileUpdatedPayload(
+                    position=position,
+                    tile=pub_tile
+                )
             )
-        )
+            await EventBroker.publish(pub_message)
 
-        await EventBroker.publish(message)
-
-        if not (message.payload.tile.is_open and message.payload.tile.is_mine):
+        if not (tile.is_open and tile.is_mine):
             return
 
-        start_p = Point(message.payload.position.x - 1, message.payload.position.y + 1)
-        end_p = Point(message.payload.position.x + 1, message.payload.position.y - 1)
+        # 주변 8칸 커서들 죽이기
+        start_p = Point(position.x - 1, position.y + 1)
+        end_p = Point(position.x + 1, position.y - 1)
 
-        inter_cursors = CursorHandler.exists_range(start_p, end_p)
-        revive_at = datetime.now() + timedelta(minutes=3)
-        for cur in inter_cursors:
-            cur.revive_at = revive_at
+        nearby_cursors = CursorHandler.exists_range(start_p, end_p)
+        if len(nearby_cursors) > 0:
+            revive_at = datetime.now() + timedelta(minutes=3)
 
-        message = Message(
-            event="multicast",
-            header={"target_conns": [cur.conn_id for cur in inter_cursors],
-                    "origin_event": InteractionEvent.YOU_DIED},
-            payload=YouDiedPayload(
-                revive_at=revive_at
+            for c in nearby_cursors:
+                c.revive_at = revive_at
+
+            pub_message = Message(
+                event="multicast",
+                header={"target_conns": [c.conn_id for c in nearby_cursors],
+                        "origin_event": InteractionEvent.YOU_DIED},
+                payload=YouDiedPayload(
+                    revive_at=revive_at
+                )
             )
-        )
-
-        await EventBroker.publish(message)
+            await EventBroker.publish(pub_message)
 
 
 async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):
