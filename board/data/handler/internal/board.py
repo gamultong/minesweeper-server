@@ -56,6 +56,7 @@ class BoardHandler:
 
         return Tiles(data=out)
 
+    @staticmethod
     def update_tile(p: Point, tile: Tile):
         tiles = Tiles(data=bytearray([tile.data]))
 
