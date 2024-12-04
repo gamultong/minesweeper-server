@@ -47,6 +47,6 @@ class Cursor:
             pointer=None,
             color=Color.get_random(),
             width=0,
-            height=0
+            height=0,
             revive_at=None
         )
