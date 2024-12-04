@@ -3,8 +3,7 @@ from cursor.data.handler import CursorHandler
 from board.data import Point
 from event import EventBroker
 from message import Message
-from datetime import datetime
-
+from datetime import datetime, timedelta
 from message.payload import (
     NewConnPayload,
     MyCursorPayload,
@@ -20,7 +19,11 @@ from message.payload import (
     MovingPayload,
     CheckMovablePayload,
     MovableResultPayload,
-    MovedPayload
+    MovedPayload,
+    InteractionEvent,
+    TileStateChangedPayload,
+    TileUpdatedPayload,
+    YouDiedPayload
 )
 
 
@@ -243,6 +246,39 @@ class CursorEventHandler:
                 target_cursors=new_watchers,
                 cursors=[cursor]
             )
+
+    @EventBroker.add_receiver(InteractionEvent.TILE_STATE_CHANGED)
+    @staticmethod
+    async def receive_tile_state_changed(message: Message[TileStateChangedPayload]):
+        view_cursors = CursorHandler.view_includes(message.payload.position)
+
+        message = Message(
+            event="multicast",
+            header={"target_conns": view_cursors,
+                    "origin_event": InteractionEvent.TILE_UPDATED},
+            payload=TileUpdatedPayload(
+                position=message.payload.position,
+                tile=message.payload.tile
+            )
+        )
+
+        await EventBroker.publish(message)
+
+        start_p = Point(message.payload.position.x - 1, message.payload.position.y + 1)
+        end_p = Point(message.payload.position.x + 1, message.payload.position.y - 1)
+
+        inter_cursors = CursorHandler.exists_range(start_p, end_p)
+
+        message = Message(
+            event="multicast",
+            header={"target_conns": inter_cursors,
+                    "origin_event": InteractionEvent.YOU_DIED},
+            payload=YouDiedPayload(
+                revive_at=datetime.now() + timedelta(minutes=3)
+            )
+        )
+
+        await EventBroker.publish(message)
 
 
 async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):
