@@ -46,7 +46,8 @@ class CursorTestCase(unittest.TestCase):
             pointer=None,
             height=6,
             width=6,
-            color=Color.BLUE
+            color=Color.BLUE,
+            revive_at=None
         )
         cur_b = Cursor(
             conn_id="B",
@@ -54,7 +55,8 @@ class CursorTestCase(unittest.TestCase):
             pointer=None,
             height=7,
             width=7,
-            color=Color.BLUE
+            color=Color.BLUE,
+            revive_at=None
         )
         cur_c = Cursor(
             conn_id="C",
@@ -62,7 +64,8 @@ class CursorTestCase(unittest.TestCase):
             pointer=None,
             height=4,
             width=4,
-            color=Color.BLUE
+            color=Color.BLUE,
+            revive_at=None
         )
 
         self.assertTrue(cur_a.check_in_view(cur_c.position))
