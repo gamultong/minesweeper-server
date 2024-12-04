@@ -120,32 +120,38 @@ class BoardEventHandler():
         match (click_type):
             # 닫힌 타일 열기
             case ClickType.GENERAL_CLICK:
+                if tile.is_flag:
+                    return
+
                 tile.is_open = True
                 tile.data |= 0b10000000
 
-                tile.is_flag = False
-                tile.color = None
-                tile.data &= 0b11000111
-            # 깃발 꽂기
+                
+            # 깃발 꽂기/뽑기
             case ClickType.SPECIAL_CLICK:
-                color = message.payload.color
-                tile.is_flag = True
-                tile.color = color
+                if tile.is_flag:
+                    tile.is_flag = False
+                    tile.color = None
+                    tile.data &= 0b11000111
+                else:
+                    color = message.payload.color
+                    tile.is_flag = True
+                    tile.color = color
 
-                # uh-oh..
-                match color:
-                    case Color.RED:
-                        color_to_int = 0
-                    case Color.YELLOW:
-                        color_to_int = 1
-                    case Color.BLUE:
-                        color_to_int = 2
-                    case Color.PURPLE:
-                        color_to_int = 3
+                    # uh-oh..
+                    match color:
+                        case Color.RED:
+                            color_to_int = 0
+                        case Color.YELLOW:
+                            color_to_int = 1
+                        case Color.BLUE:
+                            color_to_int = 2
+                        case Color.PURPLE:
+                            color_to_int = 3
 
-                color_to_int <<= 3
+                    color_to_int <<= 3
 
-                tile.data |= 0b00100000 | color_to_int
+                    tile.data |= 0b00100000 | color_to_int
 
         BoardHandler.update_tile(pointer, tile)
 

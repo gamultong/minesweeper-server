@@ -229,6 +229,38 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(got.payload.tile, expected_tile)
 
     @patch("event.EventBroker.publish")
+    async def test_try_pointing_pointable_closed_general_click_flag(self, mock: AsyncMock):
+        pointer = Point(1, 1)
+
+        message = Message(
+            event=PointEvent.TRY_POINTING,
+            header={"sender": self.sender_id},
+            payload=TryPointingPayload(
+                new_pointer=pointer,
+                click_type=ClickType.GENERAL_CLICK,
+                color=Color.BLUE
+            )
+        )
+
+        await BoardEventHandler.receive_try_pointing(message)
+
+        # pointing-result 발행하는지 확인
+        self.assertEqual(len(mock.mock_calls), 1)
+
+        # pointing-result
+        got: Message[PointingResultPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, PointEvent.POINTING_RESULT)
+        # receiver 값 확인
+        self.assertEqual(len(got.header), 1)
+        self.assertIn("receiver", got.header)
+        self.assertEqual(got.header["receiver"], self.sender_id)
+        # payload 확인
+        self.assertEqual(type(got.payload), PointingResultPayload)
+        self.assertTrue(got.payload.pointable)
+        self.assertEqual(got.payload.pointer, pointer)
+
+    @patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_special_click(self, mock: AsyncMock):
         pointer = Point(1, 0)
         color = Color.BLUE
@@ -275,6 +307,60 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
             is_flag=True,
             color=color,
             number=1
+        )
+
+        fetched_tile = Tile.from_int(BoardHandler.fetch(start=pointer, end=pointer).data[0])
+
+        self.assertEqual(fetched_tile, expected_tile)
+        self.assertEqual(got.payload.tile, expected_tile)
+
+    @patch("event.EventBroker.publish")
+    async def test_try_pointing_pointable_closed_special_click_already_flag(self, mock: AsyncMock):
+        pointer = Point(1, 1)
+        color = Color.BLUE
+
+        message = Message(
+            event=PointEvent.TRY_POINTING,
+            header={"sender": self.sender_id},
+            payload=TryPointingPayload(
+                new_pointer=pointer,
+                click_type=ClickType.SPECIAL_CLICK,
+                color=color
+            )
+        )
+
+        await BoardEventHandler.receive_try_pointing(message)
+
+        # pointing-result, tile-state-changed 발행하는지 확인
+        self.assertEqual(len(mock.mock_calls), 2)
+
+        # pointing-result
+        got: Message[PointingResultPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, PointEvent.POINTING_RESULT)
+        # receiver 값 확인
+        self.assertEqual(len(got.header), 1)
+        self.assertIn("receiver", got.header)
+        self.assertEqual(got.header["receiver"], self.sender_id)
+        # payload 확인
+        self.assertEqual(type(got.payload), PointingResultPayload)
+        self.assertTrue(got.payload.pointable)
+        self.assertEqual(got.payload.pointer, pointer)
+
+        # tile-state-changed
+        got: Message[PointingResultPayload] = mock.mock_calls[1].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, InteractionEvent.TILE_STATE_CHANGED)
+        # payload 확인
+        self.assertEqual(type(got.payload), TileStateChangedPayload)
+        self.assertEqual(got.payload.position, pointer)
+
+        expected_tile = Tile.create(
+            is_open=False,
+            is_mine=True,
+            is_flag=False,
+            color=None,
+            number=None
         )
 
         fetched_tile = Tile.from_int(BoardHandler.fetch(start=pointer, end=pointer).data[0])
