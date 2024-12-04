@@ -1,11 +1,11 @@
 import unittest
 import uuid
 
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 from conn import Conn
 from conn.manager import ConnectionManager
 from message import Message
-from message.payload import TilesPayload, NewConnEvent, NewConnPayload
+from message.payload import TilesPayload, NewConnEvent, NewConnPayload, ConnClosedPayload
 from event import EventBroker
 from conn.test.fixtures import create_connection_mock
 from board.data import Point
@@ -17,6 +17,9 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         self.con2 = create_connection_mock()
         self.con3 = create_connection_mock()
         self.con4 = create_connection_mock()
+
+    def tearDown(self):
+        ConnectionManager.conns = {}
 
     @patch("event.EventBroker.publish")
     async def test_add(self, mock: AsyncMock):
@@ -33,6 +36,7 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
         got: Message[NewConnPayload] = mock.mock_calls[0].args[0]
 
         self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, NewConnEvent.NEW_CONN)
         self.assertEqual(type(got.payload), NewConnPayload)
         self.assertEqual(got.payload.conn_id, con_obj.id)
         self.assertEqual(got.payload.width, width)
@@ -61,6 +65,22 @@ class ConnectionManagerTestCase(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(conn_ids.count(id), 1)
             # UUID 포맷인지 확인. 아니면 ValueError
             uuid.UUID(id)
+
+    @patch("event.EventBroker.publish")
+    async def test_close(self, mock: AsyncMock):
+        conn_id = "ayo"
+        conn = Conn.create(conn_id, self.con1)
+        ConnectionManager.conns[conn_id] = conn
+
+        await ConnectionManager.close(conn)
+
+        self.assertIsNone(ConnectionManager.get_conn(conn_id))
+
+        mock.assert_called_once()
+        got: Message[ConnClosedPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, NewConnEvent.CONN_CLOSED)
+        self.assertEqual(type(got.payload), ConnClosedPayload)
 
     @patch("event.EventBroker.publish")
     async def test_receive_broadcast_event(self, mock: AsyncMock):
