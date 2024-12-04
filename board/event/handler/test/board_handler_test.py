@@ -138,7 +138,6 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
                 new_pointer=pointer,
-                cursor_position=Point(0, 0),
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
             )
@@ -171,7 +170,6 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
                 new_pointer=pointer,
-                cursor_position=Point(0, 0),
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
             )
@@ -204,7 +202,6 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
                 new_pointer=pointer,
-                cursor_position=Point(0, 0),
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
             )
