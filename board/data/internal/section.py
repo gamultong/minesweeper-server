@@ -72,7 +72,7 @@ class Section:
             else:
                 mine -= 1
             return q
-
+        # TODO: number도 저장하기
         data = bytearray(
             0b00000000
             if rand_choice()
