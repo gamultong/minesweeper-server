@@ -21,8 +21,11 @@ from message.payload import (
     InteractionEvent,
     TileStateChangedPayload,
     YouDiedPayload,
-    TileUpdatedPayload
+    TileUpdatedPayload,
+    ConnClosedPayload,
+    CursorQuitPayload
 )
+from .fixtures import setup_cursor_locations
 import unittest
 from unittest.mock import AsyncMock, patch
 from board.data import Point, Tile
@@ -451,47 +454,10 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
 
 class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        # /docs/example/cursor-location.png
-        CursorHandler.cursor_dict = {
-            "A": Cursor(
-                conn_id="A",
-                position=Point(-3, 3),
-                pointer=None,
-                height=6,
-                width=6,
-                color=Color.YELLOW,
-                revive_at=None
-            ),
-            "B": Cursor(
-                conn_id="B",
-                position=Point(-3, -4),
-                pointer=None,
-                height=7,
-                width=7,
-                color=Color.BLUE,
-                revive_at=None
-            ),
-            "C": Cursor(
-                conn_id="C",
-                position=Point(2, -1),
-                pointer=None,
-                height=4,
-                width=4,
-                color=Color.PURPLE,
-                revive_at=None
-            )
-        }
-
-        self.cur_a = CursorHandler.cursor_dict["A"]
-        self.cur_b = CursorHandler.cursor_dict["B"]
-        self.cur_c = CursorHandler.cursor_dict["C"]
-
-        CursorHandler.watchers = {}
-        CursorHandler.watching = {}
-
-        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_a)
-        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_c)
-        CursorHandler.add_watcher(watcher=self.cur_a, watching=self.cur_c)
+        curs = setup_cursor_locations()
+        self.cur_a = curs[0]
+        self.cur_b = curs[1]
+        self.cur_c = curs[2]
 
     def tearDown(self):
         CursorHandler.cursor_dict = {}
@@ -732,47 +698,10 @@ class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCas
 
 class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        # /docs/example/cursor-locations-mine.png
-        CursorHandler.cursor_dict = {
-            "A": Cursor(
-                conn_id="A",
-                position=Point(-3, 3),
-                pointer=None,
-                height=6,
-                width=6,
-                color=Color.YELLOW,
-                revive_at=None
-            ),
-            "B": Cursor(
-                conn_id="B",
-                position=Point(-3, -4),
-                pointer=None,
-                height=7,
-                width=7,
-                color=Color.BLUE,
-                revive_at=None
-            ),
-            "C": Cursor(
-                conn_id="C",
-                position=Point(2, -1),
-                pointer=None,
-                height=4,
-                width=4,
-                color=Color.PURPLE,
-                revive_at=None
-            )
-        }
-
-        self.cur_a = CursorHandler.cursor_dict["A"]
-        self.cur_b = CursorHandler.cursor_dict["B"]
-        self.cur_c = CursorHandler.cursor_dict["C"]
-
-        CursorHandler.watchers = {}
-        CursorHandler.watching = {}
-
-        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_a)
-        CursorHandler.add_watcher(watcher=self.cur_b, watching=self.cur_c)
-        CursorHandler.add_watcher(watcher=self.cur_a, watching=self.cur_c)
+        curs = setup_cursor_locations()
+        self.cur_a = curs[0]
+        self.cur_b = curs[1]
+        self.cur_c = curs[2]
 
     def tearDown(self):
         CursorHandler.cursor_dict = {}
@@ -866,6 +795,57 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
         # TODO
         # datetime.now mocking 후 test
         # self.assertEqual(got.payload.revive_at, something)
+
+
+class CursorEventHandler_ConnClosed_TestCase(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        curs = setup_cursor_locations()
+        self.cur_a = curs[0]
+        self.cur_b = curs[1]
+        self.cur_c = curs[2]
+
+    def tearDown(self):
+        CursorHandler.cursor_dict = {}
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_conn_closed(self, mock: AsyncMock):
+        message = Message(
+            event=NewConnEvent.CONN_CLOSED,
+            header={"sender": self.cur_a.conn_id},
+            payload=ConnClosedPayload()
+        )
+
+        await CursorEventHandler.receive_conn_closed(message)
+
+        mock.assert_called_once()
+
+        # cursor-quit
+        got: Message[CursorQuitPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.CURSOR_QUIT)
+        # target_conns 확인, [B]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertIn("B", got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), CursorQuitPayload)
+        self.assertEqual(got.payload.position, self.cur_a.position)
+        self.assertEqual(got.payload.pointer, self.cur_a.pointer)
+        self.assertEqual(got.payload.color, self.cur_a.color)
+
+        # watcher 관계 확인
+        b_watchings = CursorHandler.get_watching("B")
+        self.assertEqual(len(b_watchings), 1)
+        self.assertIn("C", b_watchings)
+
+        c_watchers = CursorHandler.get_watchers("C")
+        self.assertEqual(len(c_watchers), 1)
+        self.assertIn("B", c_watchers)
 
 
 if __name__ == "__main__":
