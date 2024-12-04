@@ -12,13 +12,13 @@ class Tile:
     color: Color | None
     number: int | None
 
-    def __init__(self, b):
-        self.data = b,
-        self.is_open = int_to_is_open(b),
-        self.is_mine = int_to_is_mine(b),
-        self.is_flag = int_to_is_flag(b),
-        self.color = int_to_color(b),
-        self.number = int_to_number(b)
+    def __init__(self, data):
+        self.data = data
+        self.is_open = int_to_is_open(data)
+        self.is_mine = int_to_is_mine(data)
+        self.is_flag = int_to_is_flag(data)
+        self.color = int_to_color(data)
+        self.number = int_to_number(data)
 
     @staticmethod
     def create(
@@ -59,18 +59,13 @@ class Tile:
 
         tile = Tile(
             data=data,
-            is_open=is_open,
-            is_mine=is_mine,
-            is_flag=is_flag,
-            color=color,
-            number=number
         )
         return tile
 
     @staticmethod
     def from_int(b: int):
         tile = Tile(
-            data=b,
+            data=b
         )
 
         if tile.is_open and tile.is_flag:
@@ -116,4 +111,6 @@ def int_to_color(i):
 def int_to_number(i):
     if int_to_is_mine(i):
         return None
-    return (0b00000111 & i)
+    # 0이면 None
+    if (0b00000111 & i):
+        return (0b00000111 & i)
