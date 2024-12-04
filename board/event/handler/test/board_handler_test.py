@@ -1,8 +1,8 @@
 from cursor.data import Color
-from board.data import Point, Tile
+from board.data import Point, Tile, Tiles
 from board.event.handler import BoardEventHandler
 from board.data.handler import BoardHandler
-from board.data.handler.test.fixtures import setup_board_fake, setup_board
+from board.data.handler.test.fixtures import setup_board
 from message import Message
 from message.payload import (
     FetchTilesPayload,
@@ -29,7 +29,7 @@ BoardEventHandler Test
 ----------------------------
 Test
 ✅ : test 통과
-❌ : test 실패 
+❌ : test 실패
 🖊️ : test 작성
 
 - fetch-tiles-receiver
@@ -50,18 +50,18 @@ Test
 # fetch-tiles-receiver Test
 class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        setup_board_fake()
+        setup_board()
 
     @patch("event.EventBroker.publish")
     async def test_fetch_tiles_receiver_normal_case(self, mock: AsyncMock):
         """
-        fetch-tiles-receiver 
+        fetch-tiles-receiver
         normal-case
         ----------------------------
         trigger event ->
 
         - fetch-tiles : message[FetchTilesPayload]
-            - header : 
+            - header :
                 - sender : conn_id
             - descrption :
                 econn_id의 tiles 정보 요청
@@ -77,12 +77,17 @@ class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTest
         ----------------------------
         """
 
+        start_p = Point(-1, 0)
+        end_p = Point(0, -1)
+
         # trigger message 생성
         message = Message(
             event=TilesEvent.FETCH_TILES,
-            payload=FetchTilesPayload(Point(-2, 1), Point(1, -2)),
             header={"sender": "ayo"},
-
+            payload=FetchTilesPayload(
+                start_p=start_p,
+                end_p=end_p,
+            )
         )
 
         # trigger event
@@ -105,18 +110,23 @@ class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTest
 
         # message.payload
         self.assertEqual(type(got.payload), TilesPayload)
-        self.assertEqual(got.payload.start_p.x, -2)
-        self.assertEqual(got.payload.start_p.y, 1)
-        self.assertEqual(got.payload.end_p.x, 1)
-        self.assertEqual(got.payload.end_p.y, -2)
-        self.assertEqual(got.payload.tiles, "df12df12er56er56")
+        self.assertEqual(got.payload.start_p, start_p)
+        self.assertEqual(got.payload.end_p, end_p)
+
+        empty_open = Tile.from_int(0b10000000)
+        one_open = Tile.from_int(0b10000001)
+        expected = Tiles(data=bytearray([
+            empty_open.data, one_open.data, one_open.data, one_open.data
+        ]))
+
+        self.assertEqual(got.payload.tiles, expected.to_str())
 
     @patch("event.EventBroker.publish")
     async def test_receive_new_conn(self, mock: AsyncMock):
         message = Message(
             event=NewConnEvent.NEW_CONN,
             header={"sender": "ayo"},
-            payload=NewConnPayload(conn_id="not important", width=2, height=2)
+            payload=NewConnPayload(conn_id="not important", width=1, height=1)
         )
 
         await BoardEventHandler.receive_new_conn(message)
@@ -132,11 +142,24 @@ class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTest
         self.assertEqual(got.header["target_conns"][0], message.header["sender"])
 
         self.assertEqual(type(got.payload), TilesPayload)
-        self.assertEqual(got.payload.start_p.x, -2)
-        self.assertEqual(got.payload.start_p.y, 2)
-        self.assertEqual(got.payload.end_p.x, 2)
-        self.assertEqual(got.payload.end_p.y, -2)
-        self.assertEqual(got.payload.tiles, "df123df123df123er567er567")
+        self.assertEqual(got.payload.start_p.x, -1)
+        self.assertEqual(got.payload.start_p.y, 1)
+        self.assertEqual(got.payload.end_p.x, 1)
+        self.assertEqual(got.payload.end_p.y, -1)
+
+        # 하는 김에 마스킹까지 같이 테스트
+        empty_open = Tile.from_int(0b10000000)
+        one_open = Tile.from_int(0b10000001)
+        closed = Tile.from_int(0b00000000)
+        blue_flag = Tile.from_int(0b00110000)
+        purple_flag = Tile.from_int(0b00111000)
+
+        expected = Tiles(data=bytearray([
+            one_open.data, one_open.data, blue_flag.data,
+            empty_open.data, one_open.data, closed.data,
+            one_open.data, one_open.data, purple_flag.data
+        ]))
+        self.assertEqual(got.payload.tiles, expected.to_str())
 
 
 class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
@@ -176,7 +199,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertTrue(got.payload.pointable)
         self.assertEqual(got.payload.pointer, pointer)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_general_click(self, mock: AsyncMock):
         pointer = Point(1, 0)
 
@@ -228,7 +251,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_general_click_flag(self, mock: AsyncMock):
         pointer = Point(1, 1)
 
@@ -260,7 +283,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertTrue(got.payload.pointable)
         self.assertEqual(got.payload.pointer, pointer)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_special_click(self, mock: AsyncMock):
         pointer = Point(1, 0)
         color = Color.BLUE
@@ -314,7 +337,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_special_click_already_flag(self, mock: AsyncMock):
         pointer = Point(1, 1)
         color = Color.BLUE
@@ -368,7 +391,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_try_pointing_not_pointable(self, mock: AsyncMock):
         pointer = Point(2, 0)
 
@@ -400,7 +423,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertFalse(got.payload.pointable)
         self.assertEqual(got.payload.pointer, pointer)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_check_movable_true(self, mock: AsyncMock):
         new_position = Point(0, 0)
         message = Message(
@@ -427,7 +450,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(got.payload.position, new_position)
         self.assertTrue(got.payload.movable)
 
-    @patch("event.EventBroker.publish")
+    @ patch("event.EventBroker.publish")
     async def test_check_movable_false(self, mock: AsyncMock):
         new_position = Point(1, 0)
         message = Message(

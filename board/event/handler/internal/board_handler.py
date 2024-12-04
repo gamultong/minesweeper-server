@@ -27,23 +27,7 @@ class BoardEventHandler():
     async def receive_fetch_tiles(message: Message[FetchTilesPayload]):
         sender = message.header["sender"]
 
-        tiles = BoardHandler.fetch(message.payload.start_p, message.payload.end_p)
-        tiles_str = tiles.to_str()
-
-        resp_message = Message(
-            event="multicast",
-            header={"target_conns": [sender],
-                    "origin_event": TilesEvent.TILES},
-            payload=TilesPayload(
-                start_p=Point(message.payload.start_p.x,
-                              message.payload.start_p.y),
-                end_p=Point(message.payload.end_p.x,
-                            message.payload.end_p.y),
-                tiles=tiles_str
-            )
-        )
-
-        await EventBroker.publish(resp_message)
+        await BoardEventHandler._publish_tiles(message.payload.start_p, message.payload.end_p, [sender])
 
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
@@ -53,24 +37,29 @@ class BoardEventHandler():
         # 0, 0 기준으로 fetch
         width = message.payload.width
         height = message.payload.height
+
         start_p = Point(x=-width, y=height)
         end_p = Point(x=width, y=-height)
 
-        tiles = BoardHandler.fetch(start_p, end_p)
-        tiles_str = tiles.to_str()
+        await BoardEventHandler._publish_tiles(start_p, end_p, [sender])
 
-        resp_message = Message(
+    @staticmethod
+    async def _publish_tiles(start: Point, end: Point, to: list[str]):
+        tiles = BoardHandler.fetch(start, end)
+        tiles.hide_info()
+
+        pub_message = Message(
             event="multicast",
-            header={"target_conns": [sender],
+            header={"target_conns": to,
                     "origin_event": TilesEvent.TILES},
             payload=TilesPayload(
-                start_p=Point(start_p.x, start_p.y),
-                end_p=Point(end_p.x, end_p.y),
-                tiles=tiles_str
+                start_p=Point(start.x, start.y),
+                end_p=Point(end.x, end.y),
+                tiles=tiles.to_str()
             )
         )
 
-        await EventBroker.publish(resp_message)
+        await EventBroker.publish(pub_message)
 
     @EventBroker.add_receiver(PointEvent.TRY_POINTING)
     @staticmethod
