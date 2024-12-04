@@ -255,7 +255,7 @@ class CursorEventHandler:
         pub_tile = tile
         if not tile.is_open:
             # 닫힌 타일의 mine, number 정보는 버리기
-            pub_tile = Tile.from_int(tile.data & 0b10111000)
+            pub_tile = tile.copy(hide_info=True)
 
         # 변경된 타일을 보고있는 커서들에게 전달
         view_cursors = CursorHandler.view_includes(position)

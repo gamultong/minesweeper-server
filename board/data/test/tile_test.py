@@ -178,3 +178,25 @@ class TileTestCase(unittest.TestCase):
         self.assertEqual(tile.is_flag, is_flag)
         self.assertEqual(tile.color, color)
         self.assertEqual(tile.number, number)
+
+    def test_tile_copy(self):
+        tile = Tile.create(
+            is_open=False,
+            is_mine=True,
+            is_flag=True,
+            color=Color.RED,
+            number=None
+        )
+
+        copied = tile.copy()
+        self.assertEqual(tile, copied)
+
+        hidden = tile.copy(hide_info=True)
+        expected = tile.create(
+            is_open=tile.is_open,
+            is_mine=False,
+            is_flag=tile.is_flag,
+            color=tile.color,
+            number=None
+        )
+        self.assertEqual(hidden, expected)

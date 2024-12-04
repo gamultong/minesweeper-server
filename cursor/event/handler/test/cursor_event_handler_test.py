@@ -812,7 +812,7 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
         # payload 확인
         self.assertEqual(type(got.payload), TileUpdatedPayload)
         self.assertEqual(got.payload.position, position)
-        self.assertEqual(got.payload.tile.data, tile.data & 0b10111000)
+        self.assertEqual(got.payload.tile, tile.copy(hide_info=True))
 
     @patch("event.EventBroker.publish")
     async def test_receive_tile_state_changed_mine_boom(self, mock: AsyncMock):

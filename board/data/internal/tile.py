@@ -34,6 +34,19 @@ class Tile:
 
         return d
 
+    def copy(self, hide_info: bool = False):
+        t = Tile(
+            is_open=self.is_open,
+            is_mine=self.is_mine,
+            is_flag=self.is_flag,
+            color=self.color,
+            number=self.number
+        )
+        if hide_info:
+            t.is_mine = False
+            t.number = None
+        return t
+
     @staticmethod
     def create(
         is_open: bool,
@@ -42,6 +55,9 @@ class Tile:
         color: Color | None,
         number: int | None
     ):
+        """
+        __init__ 대신 이걸 쓰기를 권장.
+        """
         if number and (number >= 8 or number < 0):
             raise InvalidTileException
         if is_mine and number:
