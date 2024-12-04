@@ -1,4 +1,4 @@
-from board.data import Point, Section, Tiles
+from board.data import Point, Section, Tile, Tiles
 
 DATA_PATH = "board/data/handler/internal/boarddata"
 
@@ -55,6 +55,18 @@ class BoardHandler:
             out += bytearray().join(l)
 
         return Tiles(data=out)
+
+    @staticmethod
+    def update_tile(p: Point, tile: Tile):
+        tiles = Tiles(data=bytearray([tile.data]))
+
+        sec_p = Point(x=p.x // Section.LENGTH, y=p.y // Section.LENGTH)
+        section = BoardHandler.sections[sec_p.y][sec_p.x]
+
+        section.update(data=tiles, start=p)
+
+        # 지금은 안 해도 되긴 할텐데 일단 해 놓기
+        BoardHandler.sections[sec_p.y][sec_p.x] = section
 
     @staticmethod
     def _debug():

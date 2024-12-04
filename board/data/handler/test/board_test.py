@@ -1,6 +1,6 @@
 import unittest
 from tests.utils import cases
-from board.data import Point
+from board.data import Point, Tile
 from board.data.handler import BoardHandler
 from .fixtures import setup_board_fake
 
@@ -46,6 +46,16 @@ class BoardHandlerTestCase(unittest.TestCase):
         data = tiles.to_str()
 
         self.assertEqual(data,  expect)
+
+    def test_update_tile(self):
+        p = Point(1, 1)
+
+        tile = Tile.from_int(0)
+        BoardHandler.update_tile(p=p, tile=tile)
+
+        tiles = BoardHandler.fetch(start=p, end=p)
+
+        self.assertEqual(tiles.data[0], tile.data)
 
 
 if __name__ == "__main__":
