@@ -1,6 +1,7 @@
 from board.data import Point
 from .color import Color
 from dataclasses import dataclass
+from datetime import timedelta
 
 
 @dataclass
@@ -11,6 +12,7 @@ class Cursor:
     color: Color
     width: int
     height: int
+    revive_at: timedelta | None
 
     def set_size(self, width: int, height: int):
         self.width = width
@@ -46,4 +48,5 @@ class Cursor:
             color=Color.get_random(),
             width=0,
             height=0
+            revive_at=None
         )
