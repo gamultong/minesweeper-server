@@ -10,6 +10,8 @@ class NewConnEvent(str, Enum):
     NEW_CONN = "new-conn"
     CURSORS = "cursors"
     MY_CURSOR = "my-cursor"
+    CONN_CLOSED = "conn-closed"
+    CURSOR_QUIT = "cursor-quit"
 
 
 @dataclass
@@ -32,4 +34,14 @@ class CursorsPayload(Payload):
 
 
 class MyCursorPayload(CursorPayload):
+    pass
+
+
+@dataclass
+class ConnClosedPayload(Payload):
+    pass
+
+
+@dataclass
+class CursorQuitPayload(CursorPayload):
     pass
