@@ -5,20 +5,34 @@ from .tile_exception import InvalidTileException
 
 @dataclass
 class Tile:
-    data: int
     is_open: bool
     is_mine: bool
     is_flag: bool
     color: Color | None
     number: int | None
 
-    def __init__(self, data):
-        self.data = data
-        self.is_open = int_to_is_open(data)
-        self.is_mine = int_to_is_mine(data)
-        self.is_flag = int_to_is_flag(data)
-        self.color = int_to_color(data)
-        self.number = int_to_number(data)
+    @property
+    def data(self) -> int:
+        d = 0b00000000
+
+        d |= 0b10000000 if self.is_open else 0
+        d |= 0b01000000 if self.is_mine else 0
+        d |= 0b00100000 if self.is_flag else 0
+        d |= self.number if self.number is not None else 0
+
+        match self.color:
+            case Color.RED | None:
+                color_bits = 0
+            case Color.YELLOW:
+                color_bits = 1
+            case Color.BLUE:
+                color_bits = 2
+            case Color.PURPLE:
+                color_bits = 3
+
+        d |= color_bits << 3
+
+        return d
 
     @staticmethod
     def create(
@@ -39,62 +53,40 @@ class Tile:
         if (not is_flag) and (color is not None):
             raise InvalidTileException
 
-        match color:
-            case None:
-                color_to_int = 0
-            case Color.RED:
-                color_to_int = 0
-            case Color.YELLOW:
-                color_to_int = 1
-            case Color.BLUE:
-                color_to_int = 2
-            case Color.PURPLE:
-                color_to_int = 3
-
-        data = is_open << 7
-        data |= is_mine << 6
-        data |= is_flag << 5
-        data |= color_to_int << 3
-        data |= number if number != None else 0
-
-        tile = Tile(
-            data=data,
+        t = Tile(
+            is_open=is_open,
+            is_mine=is_mine,
+            is_flag=is_flag,
+            color=color,
+            number=number
         )
-        return tile
+        return t
 
     @staticmethod
     def from_int(b: int):
-        tile = Tile(
-            data=b
-        )
+        is_open = bool(b & 0b10000000)
+        is_mine = bool(b & 0b01000000)
+        is_flag = bool(b & 0b00100000)
 
-        if tile.is_open and tile.is_flag:
+        color = extract_color(b) if is_flag else None
+        number = extract_number(b) if not is_mine else None
+
+        if is_open and is_flag:
             raise InvalidTileException()
 
-        return tile
+        t = Tile(
+            is_open=is_open,
+            is_mine=is_mine,
+            is_flag=is_flag,
+            color=color,
+            number=number
+        )
+        return t
 
 
-def int_to_is_open(i: int):
-    b = 0b10000000
-    return bool(i & b)
-
-
-def int_to_is_mine(i: int):
-    b = 0b01000000
-    return bool(i & b)
-
-
-def int_to_is_flag(i):
-    b = 0b00100000
-    return bool(i & b)
-
-
-def int_to_color(i):
-    if not int_to_is_flag(i):
-        return None
-
-    b = 0b00011000
-    match (i & b) >> 3:
+def extract_color(b: int) -> Color:
+    mask = 0b00011000
+    match (b & mask) >> 3:
         case 0:
             return Color.RED
         case 1:
@@ -105,9 +97,9 @@ def int_to_color(i):
             return Color.PURPLE
 
 
-def int_to_number(i):
-    if int_to_is_mine(i):
+def extract_number(i: int) -> int | None:
+    result = i & 0b00000111
+    if result == 0:
+        # 0은 None으로 반환
         return None
-    # 0이면 None
-    if (0b00000111 & i):
-        return (0b00000111 & i)
+    return result
