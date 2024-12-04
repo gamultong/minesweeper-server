@@ -1,86 +1,45 @@
 from .point import Point
+from .tiles import Tiles
+from random import randint
 
 
 class Section:
     LENGTH = 100
+    MINE_RATIO = 0.3
 
-    def __init__(self, p: Point, data):
+    def __init__(self, p: Point, data: bytearray):
         self.p = p
         self.data = data
 
-    def __getitem__(self, *args):
-        slc: slice | int = args[0]
-        if type(slc) == int:
-            return self.data[slc]
+    def fetch(self, start: Point, end: Point | None = None) -> Tiles:
+        if end is None:
+            end = start
 
-        start_y = slc.start if slc.start != None else 0
-        end_y = slc.stop if slc.stop != None else Section.LENGTH
+        # row 당 가져올 원소 개수 + 1
+        x_gap = end.x - start.x + 1
 
-        start_y = to_inner_index(start_y)
-        end_y = to_inner_index(end_y)
+        result = bytearray()
+        for y in range(start.y, end.y-1, -1):
+            # (row 길이 * y의 실제 인덱스 위치) + x 오프셋
+            idx_start = Section.LENGTH * (Section.LENGTH - y - 1) + start.x
+            result += self.data[idx_start: idx_start+x_gap]
 
-        class wrapper:
-            def __getitem__(wp_self, *args):
-                wp_slc: slice | int = args[0]
-                if type(wp_slc) == int:
-                    wp_slc = slice(wp_slc, wp_slc+1, None)
+        return Tiles(data=result)
 
-                start_x = wp_slc.start if wp_slc.start else 0
-                end_x = wp_slc.stop if wp_slc.stop else Section.LENGTH
+    def update(self, data: Tiles, start: Point, end: Point | None = None) -> None:
+        if end is None:
+            end = start
 
-                result = [self.data[i][start_x:end_x] for i in range(start_y, end_y+1)]
+        expected_len = (end.x - start.x + 1) * (start.y - end.y + 1)
+        if len(data.data) != expected_len:
+            raise "예상 길이와 다름"
 
-                return result
+        x_gap = end.x - start.x + 1
 
-            def __setitem__(wp_self, *args):
-                wp_slc: slice | int = args[0]
-                wp_data = args[1]
-                if type(wp_slc) == int:
-                    wp_slc = slice(wp_slc, wp_slc+1, None)
-
-                start_x = wp_slc.start if wp_slc.start else 0
-                end_x = wp_slc.stop if wp_slc.stop else Section.LENGTH
-                for y in range(start_y, end_y+1):
-                    self.data[y] = self.data[y][:start_x] + wp_data[y-start_y] + self.data[y][end_x:]
-                return
-
-        return wrapper()
-
-    def __setitem__(self, *args):
-        slc: slice | int = args[0]
-        data = args[1]
-        if type(slc) == int:
-            if type(data) != bytearray:
-                raise
-            if len(data) != Section.LENGTH:
-                raise
-            self.data[slc] = data
-            return
-        return
-
-    def fetch(self, start: Point, end: Point | None = None) -> list[bytearray] | bytes:
-        if end:
-            data = self[start.y:end.y][start.x:end.x+1]
-        else:
-            data = bytes([self[start.y][start.x]])
-        return data
-
-    def update(self, data, start: Point, end: Point | None = None) -> None:
-        if end:
-            self[start.y:end.y][start.x:end.x+1] = data
-        else:
-            self[start.y][start.x] = data[0]
-
-    def _debug(self):
-        print("---------------------------------")
-        print("section lenght  :", Section.LENGTH)
-        print("section point x :", self.abs_x)
-        print("              y :", self.abs_y)
-        print("section data    :")
-        print("---------------------------------")
-        for i in range(Section.LENGTH):
-            print(self.data[i])
-        print("---------------------------------")
+        for y in range(start.y, end.y-1, -1):
+            idx_start = Section.LENGTH * (Section.LENGTH - y - 1) + start.x
+            offset = (start.y - y) * x_gap
+            self.data[idx_start: idx_start+x_gap] = data.data[offset: offset+x_gap]
 
     @property
     def abs_x(self):
@@ -91,10 +50,42 @@ class Section:
         return self.p.y * Section.LENGTH
 
     @staticmethod
-    def from_str(p: Point, data):
-        arr = [bytearray(data[i*Section.LENGTH:(i*Section.LENGTH)+Section.LENGTH], "ascii") for i in range(Section.LENGTH)]
-        return Section(p, arr)
+    def from_str(p: Point, data: str):
+        """
+        레거시, 관련 로직 바꿔야 함.
+        """
+        return Section(p, bytearray(data, encoding="ascii"))
+
+    @staticmethod
+    def create(p: Point):
+        total = Section.LENGTH**2
+        tiles = int((total * (1-Section.MINE_RATIO))//1)
+        mine = total - tiles
+
+        def rand_choice():
+            nonlocal mine
+            nonlocal tiles
+            r = randint(1, tiles+mine)
+            q = tiles >= r
+            if q:
+                tiles -= 1
+            else:
+                mine -= 1
+            return q
+        # TODO: number도 저장하기
+        data = bytearray(
+            0b00000000
+            if rand_choice()
+            else 0b01000000
+            for _ in range(total)
+        )
+
+        return Section(p=p, data=data)
 
 
-def to_inner_index(y):
-    return Section.LENGTH - 1 - y
+if __name__ == "__main__":
+    sec = Section.create(Point(0, 0))
+    for i in range(100):
+        print("".join(map(lambda x: "m" if x == 0b01000000 else "c", sec.data[i*100:(i+1)*100])))
+    print(sec.data.count(0b01000000))
+    print(sec.data.count(0b00000000))

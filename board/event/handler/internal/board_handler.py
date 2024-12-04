@@ -1,5 +1,5 @@
 from event import EventBroker
-from board.data import Point
+from board.data import Point, Tile
 from board.data.handler import BoardHandler
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent, NewConnPayload, TryPointingPayload, PointingResultPayload, PointEvent, MoveEvent, CheckMovablePayload, MovableResultPayload
@@ -12,6 +12,7 @@ class BoardEventHandler():
         sender = message.header["sender"]
 
         tiles = BoardHandler.fetch(message.payload.start_p, message.payload.end_p)
+        tiles_str = tiles.to_str()
 
         resp_message = Message(
             event="multicast",
@@ -22,7 +23,7 @@ class BoardEventHandler():
                               message.payload.start_p.y),
                 end_p=Point(message.payload.end_p.x,
                             message.payload.end_p.y),
-                tiles=tiles
+                tiles=tiles_str
             )
         )
 
@@ -40,8 +41,8 @@ class BoardEventHandler():
         end_p = Point(x=width, y=-height)
 
         tiles = BoardHandler.fetch(start_p, end_p)
+        tiles_str = tiles.to_str()
 
-        # TODO: header 추가하기. 위 메서드도
         resp_message = Message(
             event="multicast",
             header={"target_conns": [sender],
@@ -49,7 +50,7 @@ class BoardEventHandler():
             payload=TilesPayload(
                 start_p=Point(start_p.x, start_p.y),
                 end_p=Point(end_p.x, end_p.y),
-                tiles=tiles
+                tiles=tiles_str
             )
         )
 
@@ -70,8 +71,12 @@ class BoardEventHandler():
             Point(pointer.x+1, pointer.y-1)
         )
 
-        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
-        pointable = tiles.find("O") != -1
+        pointable = False
+        for tile in tiles.data:
+            t = Tile.from_int(tile)
+            if t.is_open:
+                pointable = True
+                break
 
         message = Message(
             event=PointEvent.POINTING_RESULT,
@@ -91,10 +96,10 @@ class BoardEventHandler():
 
         position = message.payload.position
 
-        tile = BoardHandler.fetch(start=position, end=position)[0]
+        tiles = BoardHandler.fetch(start=position, end=position)
+        tile = Tile.from_int(tiles.data[0])
 
-        # TODO: TileState에 대한 enum이 생기면 그걸로 변경
-        movable = tile == "O"
+        movable = tile.is_open
 
         message = Message(
             event=MoveEvent.MOVABLE_RESULT,

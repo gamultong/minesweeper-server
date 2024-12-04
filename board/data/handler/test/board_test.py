@@ -2,7 +2,7 @@ import unittest
 from tests.utils import cases
 from board.data import Point
 from board.data.handler import BoardHandler
-from .fixtures import setup_board
+from .fixtures import setup_board_fake
 
 FETCH_CASE = \
     [
@@ -35,14 +35,15 @@ FETCH_CASE = \
 
 class BoardHandlerTestCase(unittest.TestCase):
     def setUp(self):
-        setup_board()
+        setup_board_fake()
 
     @cases(FETCH_CASE)
     def test_fetch(self, data, expect):
         start_p = data["start_p"]
         end_p = data["end_p"]
 
-        data = BoardHandler.fetch(start_p, end_p)
+        tiles = BoardHandler.fetch(start_p, end_p)
+        data = tiles.to_str()
 
         self.assertEqual(data,  expect)
 

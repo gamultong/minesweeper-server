@@ -4,7 +4,7 @@ from fastapi.websockets import WebSocketDisconnect
 from server import app
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent
-from board.data.handler.test.fixtures import setup_board
+from board.data.handler.test.fixtures import setup_board_fake
 from board.data import Point
 from event import EventBroker
 
@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock
 
 class ServerTestCase(unittest.TestCase):
     def setUp(self):
-        setup_board()
+        setup_board_fake()
         self.client = TestClient(app)
 
         self.client.headers["X-View-Tiles-Width"] = "1"

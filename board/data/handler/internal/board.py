@@ -1,4 +1,4 @@
-from board.data import Point, Section
+from board.data import Point, Section, Tiles
 
 DATA_PATH = "board/data/handler/internal/boarddata"
 
@@ -25,11 +25,11 @@ class BoardHandler:
     sections: dict[int, dict[int, Section]] = BOARD_DATA
 
     @staticmethod
-    def fetch(start: Point, end: Point):
-        out = [bytearray() for _ in range(start.y - end.y + 1)]
-        offset = 0
-        fetched = None
+    def fetch(start: Point, end: Point) -> Tiles:
+        out = bytearray()
+
         for sec_y in range(start.y // Section.LENGTH, end.y // Section.LENGTH - 1, - 1):
+            l = None
             for sec_x in range(start.x // Section.LENGTH, end.x // Section.LENGTH + 1):
                 section = BoardHandler.sections[sec_y][sec_x]
 
@@ -44,12 +44,17 @@ class BoardHandler:
 
                 fetched = section.fetch(start=start_p, end=end_p)
 
-                for y in range(len(fetched)):
-                    out[offset+y] += fetched[y]
+                x_gap, y_gap = (end_p.x - start_p.x + 1), (start_p.y - end_p.y + 1)
+                if l == None:
+                    l = [fetched.data[i*x_gap:(i+1)*x_gap] for i in range(y_gap)]
+                    continue
 
-            offset += len(fetched)
+                for i in range(y_gap):
+                    l[i] += fetched.data[i*x_gap:(i+1)*x_gap]
 
-        return bytearray().join(out).decode("ascii")
+            out += bytearray().join(l)
+
+        return Tiles(data=out)
 
     @staticmethod
     def _debug():
