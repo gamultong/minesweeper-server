@@ -85,8 +85,8 @@ class CursorEventHandler:
         new_pointer = message.payload.position
 
         # 커서 부활시간 확인
-        if cursor.revive_at:
-            if cursor.revive_at > datetime.now():
+        if cursor.revive_at is not None:
+            if cursor.revive_at >= datetime.now():
                 return
             cursor.revive_at = None
 
