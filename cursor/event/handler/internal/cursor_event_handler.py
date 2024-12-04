@@ -1,6 +1,6 @@
 from cursor.data import Cursor
 from cursor.data.handler import CursorHandler
-from board.data import Point
+from board.data import Point, Tile
 from event import EventBroker
 from message import Message
 from datetime import datetime, timedelta
@@ -252,29 +252,40 @@ class CursorEventHandler:
     async def receive_tile_state_changed(message: Message[TileStateChangedPayload]):
         view_cursors = CursorHandler.view_includes(message.payload.position)
 
+        if message.payload.tile.is_open:
+            tile = Tile.from_int(message.payload.tile.data)
+        else:
+            tile = Tile.from_int(message.payload.tile.data & 0b10111000)
+
         message = Message(
             event="multicast",
-            header={"target_conns": view_cursors,
+            header={"target_conns": [cur.conn_id for cur in view_cursors],
                     "origin_event": InteractionEvent.TILE_UPDATED},
             payload=TileUpdatedPayload(
                 position=message.payload.position,
-                tile=message.payload.tile
+                tile=tile
             )
         )
 
         await EventBroker.publish(message)
 
+        if not (message.payload.tile.is_open and message.payload.tile.is_mine):
+            return
+
         start_p = Point(message.payload.position.x - 1, message.payload.position.y + 1)
         end_p = Point(message.payload.position.x + 1, message.payload.position.y - 1)
 
         inter_cursors = CursorHandler.exists_range(start_p, end_p)
+        revive_at = datetime.now() + timedelta(minutes=3)
+        for cur in inter_cursors:
+            cur.revive_at = revive_at
 
         message = Message(
             event="multicast",
-            header={"target_conns": inter_cursors,
+            header={"target_conns": [cur.conn_id for cur in inter_cursors],
                     "origin_event": InteractionEvent.YOU_DIED},
             payload=YouDiedPayload(
-                revive_at=datetime.now() + timedelta(minutes=3)
+                revive_at=revive_at
             )
         )
 
