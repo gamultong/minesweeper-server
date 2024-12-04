@@ -5,11 +5,13 @@ from server import app
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent
 from board.data.handler.test.fixtures import setup_board_fake
+from board.event.handler import BoardEventHandler
 from board.data import Point, Tile, Tiles
 from event import EventBroker
+from conn.manager import ConnectionManager
 
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 
 class ServerTestCase(unittest.TestCase):
@@ -38,16 +40,16 @@ class ServerTestCase(unittest.TestCase):
             with self.client.websocket_connect("/session") as websocket:
                 websocket.close()
 
-    def test_fetch_tiles(self):
-        # 기존 new-conn 리시버 비우기 및 mock으로 대체
-        self.new_conn_receivers = []
-        if NewConnEvent.NEW_CONN in EventBroker.event_dict:
-            self.new_conn_receivers = EventBroker.event_dict[NewConnEvent.NEW_CONN].copy()
+    @patch("event.EventBroker.publish")
+    def test_fetch_tiles(self, mock: AsyncMock):
+        async def filter_tiles_event(message: Message):
+            match (message.event):
+                case "multicast":
+                    await ConnectionManager.receive_multicast_event(message)
+                case TilesEvent.FETCH_TILES:
+                    await BoardEventHandler.receive_fetch_tiles(message)
 
-        EventBroker.event_dict[NewConnEvent.NEW_CONN] = []
-
-        self.mock_new_conn_func = AsyncMock()
-        self.mock_new_conn_receiver = EventBroker.add_receiver(NewConnEvent.NEW_CONN)(func=self.mock_new_conn_func)
+        mock.side_effect = filter_tiles_event
 
         with self.client.websocket_connect("/session") as websocket:
             msg = Message(
@@ -78,10 +80,6 @@ class ServerTestCase(unittest.TestCase):
             # TODO: 이거 고치기
             # response = websocket.receive_text()
             # self.assertEqual(response, expect.to_str())
-
-        # 리시버 정상화
-        EventBroker.remove_receiver(self.mock_new_conn_receiver)
-        EventBroker.event_dict[NewConnEvent.NEW_CONN] = self.new_conn_receivers
 
 
 if __name__ == "__main__":
