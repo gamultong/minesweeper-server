@@ -290,6 +290,38 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         self.assertEqual(got.payload.new_pointer, Point(0, 0))
 
     @patch("event.EventBroker.publish")
+    async def test_receive_pointing_revive_at(self, mock: AsyncMock):
+        from datetime import datetime
+        CursorHandler.cursor_dict = {
+            "A": Cursor(
+                conn_id="A",
+                position=Point(-3, 3),
+                pointer=None,
+                height=6,
+                width=6,
+                # color 중요. 이따 비교에 써야 함.
+                color=Color.RED,
+                revive_at=datetime(year=2200, month=1, day=1, hour=0, minute=0, second=0)
+            )
+        }
+
+        click_type = ClickType.GENERAL_CLICK
+        pointer = Point(0, 0)
+
+        message = Message(
+            event=PointEvent.POINTING,
+            header={"sender": "A"},
+            payload=PointingPayload(
+                click_type=click_type,
+                position=pointer
+            )
+        )
+
+        await CursorEventHandler.receive_pointing(message)
+
+        self.assertEqual(mock.call_count, 0)
+
+    @patch("event.EventBroker.publish")
     async def test_receive_pointing_result_pointable(self, mock: AsyncMock):
         expected_conn_id = "example"
 

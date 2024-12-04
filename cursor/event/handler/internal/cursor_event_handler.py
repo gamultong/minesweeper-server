@@ -3,6 +3,8 @@ from cursor.data.handler import CursorHandler
 from board.data import Point
 from event import EventBroker
 from message import Message
+from datetime import datetime
+
 from message.payload import (
     NewConnPayload,
     MyCursorPayload,
@@ -76,10 +78,17 @@ class CursorEventHandler:
     @EventBroker.add_receiver(PointEvent.POINTING)
     @staticmethod
     async def receive_pointing(message: Message[PointingPayload]):
+
         sender = message.header["sender"]
 
         cursor = CursorHandler.get_cursor(sender)
         new_pointer = message.payload.position
+
+        # 커서 부활시간 확인
+        if cursor.revive_at is not None:
+            if cursor.revive_at >= datetime.now():
+                return
+            cursor.revive_at = None
 
         # 뷰 바운더리 안에서 포인팅하는지 확인
         if not cursor.check_in_view(new_pointer):

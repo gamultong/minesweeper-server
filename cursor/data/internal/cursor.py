@@ -1,7 +1,7 @@
 from board.data import Point
 from .color import Color
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime
 
 
 @dataclass
@@ -12,7 +12,7 @@ class Cursor:
     color: Color
     width: int
     height: int
-    revive_at: timedelta | None
+    revive_at: datetime | None
 
     def set_size(self, width: int, height: int):
         self.width = width
