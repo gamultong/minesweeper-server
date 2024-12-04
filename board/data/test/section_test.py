@@ -96,7 +96,7 @@ class SectionTestCase(unittest.TestCase):
         cols = 3
 
         # 업데이트용 row * col 크기의 2D bytearray 생성
-        data = bytearray().join([bytearray(f"{i}"*cols, "ascii") for i in range(rows)])
+        data = bytearray().join([bytearray(f"{i}"*cols, "latin-1") for i in range(rows)])
         value = Tiles(data)
         start = EXAMPLE_POINT
         end = Point(2, 1)
