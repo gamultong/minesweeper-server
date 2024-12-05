@@ -8,13 +8,13 @@ app = FastAPI()
 @app.websocket("/session")
 async def session(ws: WebSocket):
     try:
-        view_width = int(ws.headers["X-View-Tiles-Width"])
-        view_height = int(ws.headers["X-View-Tiles-Height"])
+        view_width = int(ws.query_params["view_wdith"])
+        view_height = int(ws.query_params["view_height"])
     except KeyError:
-        await ws.close(code=400, reason="Missing required headers")
+        await ws.close(code=400, reason="Missing required data")
         return
     except ValueError:
-        await ws.close(code=400, reason="Headers are not properly typed")
+        await ws.close(code=400, reason="Data not properly typed")
         return
 
     conn = await ConnectionManager.add(ws, width=view_width, height=view_height)
