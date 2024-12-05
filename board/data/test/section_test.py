@@ -114,13 +114,6 @@ class SectionTestCase(unittest.TestCase):
             color=None,
             number=None,
         )
-        closed = Tile.create(
-            is_open=False,
-            is_mine=False,
-            is_flag=False,
-            color=None,
-            number=None,
-        )
 
         sec = Section.create(Point(0, 0))
 
@@ -130,7 +123,48 @@ class SectionTestCase(unittest.TestCase):
 
         self.assertEqual(len(sec.data), total)
         self.assertEqual(sec.data.count(mine.data), mine_count)
-        self.assertEqual(sec.data.count(closed.data), tile_count)
+
+        num_mask = 0b00000111
+        # 숫자 정확한지 확인
+        for y in range(Section.LENGTH):
+            for x in range(Section.LENGTH):
+                idx = (y * Section.LENGTH) + x
+                tile = sec.data[idx]
+                if tile == mine.data:
+                    continue
+
+                got = tile & num_mask
+                expected = check_neighbor_mine_count(sec, Point(x, y))
+
+                self.assertEqual(got, expected)
+
+
+# (x, y)
+DELTA = [
+    (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
+    (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
+]
+
+MINE_TILE = 0b01000000
+
+
+def check_neighbor_mine_count(section: Section, pos: Point) -> int:
+    result = 0
+    # 주변 탐색
+    for dx, dy in DELTA:
+        nx, ny = pos.x+dx, pos.y+dy
+        if \
+                nx < 0 or nx >= Section.LENGTH or \
+                ny < 0 or ny >= Section.LENGTH:
+            continue
+
+        new_idx = (ny * Section.LENGTH) + nx
+        nearby_tile = section.data[new_idx]
+
+        if nearby_tile == MINE_TILE:
+            result += 1
+
+    return result
 
 
 if __name__ == "__main__":
