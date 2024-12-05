@@ -1,21 +1,21 @@
 from board.data import Section, Point
 from board.data.handler import BoardHandler
 
-"""
- 3   a s d f 1 2 3 4
- 2   a s d f 1 2 3 4
- 1   a s d f 1 2 3 4
- 0   a s d f 1 2 3 4
--1   q w e r 5 6 7 8
--2   q w e r 5 6 7 8
--3   q w e r 5 6 7 8
--4   q w e r 5 6 7 8
-   
-    -4-3-2-1 0 1 2 3
-"""
-
 
 def setup_board_fake():
+    """
+     3   a s d f 1 2 3 4
+     2   a s d f 1 2 3 4
+     1   a s d f 1 2 3 4
+     0   a s d f 1 2 3 4
+    -1   q w e r 5 6 7 8
+    -2   q w e r 5 6 7 8
+    -3   q w e r 5 6 7 8
+    -4   q w e r 5 6 7 8
+
+        -4-3-2-1 0 1 2 3
+    """
+
     Section.LENGTH = 4
 
     SECTION_1 = Section.from_str(Point(-1, 0), "asdfasdfasdfasdf")
@@ -40,6 +40,7 @@ def setup_board():
     """
     /docs/example-map-state.png
     """
+
     Section.LENGTH = 4
 
     tile_state_1 = bytearray([
