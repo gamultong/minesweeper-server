@@ -123,10 +123,10 @@ class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTest
 
     @patch("event.EventBroker.publish")
     async def test_receive_new_conn(self, mock: AsyncMock):
+        conn_id = "ayo"
         message = Message(
             event=NewConnEvent.NEW_CONN,
-            header={"sender": "ayo"},
-            payload=NewConnPayload(conn_id="not important", width=1, height=1)
+            payload=NewConnPayload(conn_id=conn_id, width=1, height=1)
         )
 
         await BoardEventHandler.receive_new_conn(message)
@@ -139,7 +139,7 @@ class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTest
 
         self.assertIn("target_conns", got.header)
         self.assertEqual(len(got.header["target_conns"]), 1)
-        self.assertEqual(got.header["target_conns"][0], message.header["sender"])
+        self.assertEqual(got.header["target_conns"][0], conn_id)
 
         self.assertEqual(type(got.payload), TilesPayload)
         self.assertEqual(got.payload.start_p.x, -1)
