@@ -315,6 +315,8 @@ class CursorEventHandler:
             other_cursor = CursorHandler.get_cursor(id)
             CursorHandler.remove_watcher(watcher=other_cursor, watching=cursor)
 
+        CursorHandler.remove_cursor(cursor.conn_id)
+
         message = Message(
             event="multicast",
             header={"target_conns": watchers,

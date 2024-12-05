@@ -847,6 +847,9 @@ class CursorEventHandler_ConnClosed_TestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(c_watchers), 1)
         self.assertIn("B", c_watchers)
 
+        # 커서 지워졌나 확인
+        self.assertIsNone(CursorHandler.get_cursor(self.cur_a.conn_id))
+
 
 if __name__ == "__main__":
     unittest.main()
