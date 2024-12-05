@@ -1,7 +1,7 @@
 from fastapi.websockets import WebSocket
 from conn import Conn
 from message import Message
-from message.payload import TilesPayload, NewConnEvent, NewConnPayload
+from message.payload import NewConnEvent, NewConnPayload, ConnClosedPayload
 from event import EventBroker
 from uuid import uuid4
 
@@ -47,6 +47,13 @@ class ConnectionManager:
     @staticmethod
     async def close(conn: Conn) -> Conn:
         ConnectionManager.conns.pop(conn.id)
+
+        message = Message(
+            event=NewConnEvent.CONN_CLOSED,
+            header={"sender": conn.id},
+            payload=ConnClosedPayload()
+        )
+        await EventBroker.publish(message)
 
     @staticmethod
     def generate_conn_id():

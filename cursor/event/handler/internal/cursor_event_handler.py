@@ -23,7 +23,9 @@ from message.payload import (
     InteractionEvent,
     TileStateChangedPayload,
     TileUpdatedPayload,
-    YouDiedPayload
+    YouDiedPayload,
+    ConnClosedPayload,
+    CursorQuitPayload
 )
 
 
@@ -294,6 +296,38 @@ class CursorEventHandler:
                 )
             )
             await EventBroker.publish(pub_message)
+
+    @EventBroker.add_receiver(NewConnEvent.CONN_CLOSED)
+    @staticmethod
+    async def receive_conn_closed(message: Message[ConnClosedPayload]):
+        sender = message.header["sender"]
+
+        cursor = CursorHandler.get_cursor(sender)
+
+        watching = CursorHandler.get_watching(cursor_id=cursor.conn_id)
+        watchers = CursorHandler.get_watchers(cursor_id=cursor.conn_id)
+
+        for id in watching:
+            other_cursor = CursorHandler.get_cursor(id)
+            CursorHandler.remove_watcher(watcher=cursor, watching=other_cursor)
+
+        for id in watchers:
+            other_cursor = CursorHandler.get_cursor(id)
+            CursorHandler.remove_watcher(watcher=other_cursor, watching=cursor)
+
+        CursorHandler.remove_cursor(cursor.conn_id)
+
+        message = Message(
+            event="multicast",
+            header={"target_conns": watchers,
+                    "origin_event": NewConnEvent.CURSOR_QUIT},
+            payload=CursorQuitPayload(
+                position=cursor.position,
+                pointer=cursor.pointer,
+                color=cursor.color
+            )
+        )
+        await EventBroker.publish(message)
 
 
 async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):
