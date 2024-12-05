@@ -1,6 +1,8 @@
 from .exceptions import InvalidFieldException, MissingFieldException, DumbHumanException
 from .parsable_payload import ParsablePayload
 
+from enum import Enum
+
 
 class Payload():
     @classmethod
@@ -34,6 +36,10 @@ class Payload():
                     raise InvalidFieldException(key, e)
                 except MissingFieldException as e:
                     raise MissingFieldException(key, e)
+                continue
+
+            if issubclass(t, Enum) and dict[key] in t:
+                kwargs[key] = t(dict[key])
                 continue
 
             if not type(dict[key]) == t:
