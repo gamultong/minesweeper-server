@@ -1,6 +1,5 @@
 from .exceptions import InvalidFieldException, MissingFieldException, DumbHumanException
 from .parsable_payload import ParsablePayload
-from typing import Generic
 
 
 class Payload():

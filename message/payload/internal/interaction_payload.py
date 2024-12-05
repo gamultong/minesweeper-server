@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-class InteractionEvent(Enum):
+class InteractionEvent(str, Enum):
     YOU_DIED = "you-died"
     TILE_UPDATED = "tile-updated"
     TILE_STATE_CHANGED = "tile-state-changed"
