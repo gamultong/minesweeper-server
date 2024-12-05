@@ -18,7 +18,7 @@ async def session(ws: WebSocket):
         print(f"WebSocket connection closed: {e}")
         await ws.close(code=1000, reason="Data not properly typed")
         return
-    except BaseException as e:
+    except Exception as e:
         await ws.close(code=1006, reason=e.__repr__())
         return
 
