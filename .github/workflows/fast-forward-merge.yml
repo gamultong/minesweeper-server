@@ -9,7 +9,6 @@ jobs:
     if: |
       github.event.issue.pull_request && 
       contains(github.event.comment.body, '/fast-forward') && 
-      (github.head_ref == 'develop' && github.base_ref == 'main') &&
       (github.triggering_actor == 'onee-only' || github.triggering_actor == 'byundojin')
     runs-on: ubuntu-latest
     steps:
