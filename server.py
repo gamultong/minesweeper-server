@@ -31,7 +31,10 @@ async def session(ws: WebSocket):
             msg.header = {"sender": conn.id}
             await ConnectionManager.handle_message(msg)
         except Exception as e:
-            print(f"WebSocket connection closed: {e}")
+            msg = e
+            if hasattr(e, "msg"):
+                msg = e.msg
+            print(f"WebSocket connection closed: {type(e)} '{msg}'")
             break
 
     await ConnectionManager.close(conn)
