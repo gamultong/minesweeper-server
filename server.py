@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, Response
 from conn.manager import ConnectionManager
 from board.event.handler import BoardEventHandler
+from cursor.event.handler import CursorEventHandler
 
 app = FastAPI()
 
