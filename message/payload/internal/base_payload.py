@@ -1,6 +1,5 @@
 from .exceptions import InvalidFieldException, MissingFieldException, DumbHumanException
 from .parsable_payload import ParsablePayload
-from typing import Generic
 
 
 class Payload():
@@ -24,7 +23,7 @@ class Payload():
                     raise DumbHumanException()
                 try:
                     kwargs[key] = t.__args__[0](**dict[key])
-                except:
+                except Exception as e:
                     raise InvalidFieldException(key, e)
                 continue
 
