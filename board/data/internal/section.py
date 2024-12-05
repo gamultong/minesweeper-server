@@ -72,13 +72,47 @@ class Section:
             else:
                 mine -= 1
             return q
-        # TODO: number도 저장하기
+
+        mine_tile = 0b01000000
+        closed_tile = 0b00000000
+
         data = bytearray(
-            0b00000000
-            if rand_choice()
-            else 0b01000000
+            closed_tile if rand_choice() else mine_tile
             for _ in range(total)
         )
+
+        # (x, y)
+        delta = [
+            (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
+            (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
+        ]
+
+        # 지뢰 주변에 숫자 1씩 증가시키기
+        for y in range(Section.LENGTH):
+            for x in range(Section.LENGTH):
+                idx = (y * Section.LENGTH) + x
+                tile = data[idx]
+
+                if tile != mine_tile:
+                    continue
+
+                # 주변 탐색
+                for dx, dy in delta:
+                    nx, ny = x+dx, y+dy
+                    if \
+                            nx < 0 or nx >= Section.LENGTH or \
+                            ny < 0 or ny >= Section.LENGTH:
+                        continue
+
+                    new_idx = (ny * Section.LENGTH) + nx
+                    nearby_tile = data[new_idx]
+
+                    if nearby_tile == mine_tile:
+                        continue
+
+                    # 숫자 증가
+                    nearby_tile += 1
+                    data[new_idx] = nearby_tile
 
         return Section(p=p, data=data)
 
