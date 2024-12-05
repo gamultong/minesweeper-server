@@ -25,16 +25,8 @@ FETCH_CASE = \
                 "start_p": Point(0, 0),
                 "end_p": Point(0, 0)
             },
-<<<<<<< HEAD
-            "expect": "1"
-        }
-=======
             "expect": "81"
-        },
-
-        # out of bound
-        # start_x <= end_x & start_y >= end_y
->>>>>>> 8717a2c (setup_board_fake 제거 및 테스트에 hex 적용)
+        }
     ]
 
 
