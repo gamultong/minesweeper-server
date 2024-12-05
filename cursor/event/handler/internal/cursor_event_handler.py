@@ -83,7 +83,6 @@ class CursorEventHandler:
     @EventBroker.add_receiver(PointEvent.POINTING)
     @staticmethod
     async def receive_pointing(message: Message[PointingPayload]):
-
         sender = message.header["sender"]
 
         cursor = CursorHandler.get_cursor(sender)
@@ -123,10 +122,11 @@ class CursorEventHandler:
         origin_pointer = cursor.pointer
         cursor.pointer = new_pointer
 
-        # TODO: 이거 본인 보고있는 커서들한테 보내야 함.
+        watchers = CursorHandler.get_watchers(cursor.conn_id)
+
         message = Message(
             event=PointEvent.POINTER_SET,
-            header={"target_conns": [cursor.conn_id]},
+            header={"target_conns":  [cursor.conn_id] + watchers},
             payload=PointerSetPayload(
                 origin_position=origin_pointer,
                 new_position=new_pointer,
