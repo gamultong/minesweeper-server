@@ -122,6 +122,10 @@ class CursorEventHandler:
         origin_pointer = cursor.pointer
         cursor.pointer = new_pointer
 
+        if origin_pointer is None and new_pointer is None:
+            # 변동 없음
+            return
+
         watchers = CursorHandler.get_watchers(cursor.conn_id)
 
         message = Message(

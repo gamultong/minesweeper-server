@@ -422,6 +422,24 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         self.assertEqual(got.payload.color, self.cur_a.color)
         self.assertEqual(got.payload.new_position, pointer)
 
+    @patch("event.EventBroker.publish")
+    async def test_receive_pointing_result_not_pointable_no_original_pointer(self, mock: AsyncMock):
+        pointer = Point(1, 0)
+        message = Message(
+            event=PointEvent.POINTING_RESULT,
+            header={"receiver": self.cur_a.conn_id},
+            payload=PointingResultPayload(
+                pointer=pointer,
+                pointable=False,
+            )
+        )
+
+        await CursorEventHandler.receive_pointing_result(message)
+
+        # 스킵하는지 확인
+        mock.assert_not_called()
+        self.assertNotEqual(self.cur_a.pointer, pointer)
+
 
 class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
