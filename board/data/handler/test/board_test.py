@@ -26,10 +26,7 @@ FETCH_CASE = \
                 "end_p": Point(0, 0)
             },
             "expect": "1"
-        },
-
-        # out of bound
-        # start_x <= end_x & start_y >= end_y
+        }
     ]
 
 
@@ -46,6 +43,16 @@ class BoardHandlerTestCase(unittest.TestCase):
         data = tiles.to_str()
 
         self.assertEqual(data,  expect)
+
+    def test_fetch_out_of_bounds(self):
+        # 오른쪽 섹션 추가
+        start = Point(4, 3)
+        end = Point(6, 1)
+
+        BoardHandler.fetch(start, end)
+
+        sx, sy = 1, 0
+        self.assertIsNotNone(BoardHandler.sections[sy][sx])
 
     def test_update_tile(self):
         p = Point(1, 1)
