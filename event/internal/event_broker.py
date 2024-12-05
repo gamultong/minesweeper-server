@@ -73,6 +73,8 @@ class EventBroker:
 
     @staticmethod
     async def publish(message: Message):
+        EventBroker._debug(message)
+
         if message.event not in EventBroker.event_dict:
             raise NoMatchingReceiverException(message.event)
 
@@ -80,3 +82,6 @@ class EventBroker:
         for id in receiver_ids:
             receiver = Receiver.get_receiver(id)
             await receiver(message)
+
+    async def _debug(message: Message):
+        print(message.to_str(del_header=False))
