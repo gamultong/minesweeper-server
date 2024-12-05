@@ -8,13 +8,18 @@ app = FastAPI()
 @app.websocket("/session")
 async def session(ws: WebSocket):
     try:
-        view_width = int(ws.query_params["view_wdith"])
-        view_height = int(ws.query_params["view_height"])
-    except KeyError:
-        await ws.close(code=400, reason="Missing required data")
+        view_width = int(ws.query_params.get("view_width"))
+        view_height = int(ws.query_params.get("view_height"))
+    except KeyError as e:
+        print(f"WebSocket connection closed: {e}")
+        await ws.close(code=1000, reason="Missing required data")
         return
-    except ValueError:
-        await ws.close(code=400, reason="Data not properly typed")
+    except TypeError as e:
+        print(f"WebSocket connection closed: {e}")
+        await ws.close(code=1000, reason="Data not properly typed")
+        return
+    except BaseException as e:
+        await ws.close(code=1006, reason=e.__repr__())
         return
 
     conn = await ConnectionManager.add(ws, width=view_width, height=view_height)
