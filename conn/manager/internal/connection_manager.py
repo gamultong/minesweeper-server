@@ -46,14 +46,14 @@ class ConnectionManager:
 
     @staticmethod
     async def close(conn: Conn) -> Conn:
+        ConnectionManager.conns.pop(conn.id)
+
         message = Message(
             event=NewConnEvent.CONN_CLOSED,
             header={"sender": conn.id},
             payload=ConnClosedPayload()
         )
         await EventBroker.publish(message)
-
-        ConnectionManager.conns.pop(conn.id)
 
     @staticmethod
     def generate_conn_id():
