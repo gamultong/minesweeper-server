@@ -31,7 +31,7 @@ class BoardHandler:
         for sec_y in range(start.y // Section.LENGTH, end.y // Section.LENGTH - 1, - 1):
             l = None
             for sec_x in range(start.x // Section.LENGTH, end.x // Section.LENGTH + 1):
-                section = BoardHandler.sections[sec_y][sec_x]
+                section = BoardHandler._get_or_create_section(sec_x, sec_y)
 
                 start_p = Point(
                     x=max(start.x, section.abs_x) - (section.abs_x),
@@ -67,6 +67,18 @@ class BoardHandler:
 
         # 지금은 안 해도 되긴 할텐데 일단 해 놓기
         BoardHandler.sections[sec_p.y][sec_p.x] = section
+
+    @staticmethod
+    def _get_or_create_section(x: int, y: int) -> Section:
+        if y not in BoardHandler.sections:
+            BoardHandler.sections[y] = {}
+
+        if x not in BoardHandler.sections[y]:
+            new_section = Section.create(Point(x, y))
+            # TODO: 주변 섹션과의 접경타일들 숫자 업데이트
+            BoardHandler.sections[y][x] = new_section
+
+        return BoardHandler.sections[y][x]
 
     @staticmethod
     def _debug():
