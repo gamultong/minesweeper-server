@@ -115,8 +115,6 @@ class BoardEventHandler():
         if tile.is_open:
             return
 
-        # TODO: data와 다른 필드들을 내부적으로 동기화시키기
-        # data를 @property로 만드는 것도?
         match (click_type):
             # 닫힌 타일 열기
             case ClickType.GENERAL_CLICK:
@@ -124,34 +122,13 @@ class BoardEventHandler():
                     return
 
                 tile.is_open = True
-                tile.data |= 0b10000000
 
-                
             # 깃발 꽂기/뽑기
             case ClickType.SPECIAL_CLICK:
-                if tile.is_flag:
-                    tile.is_flag = False
-                    tile.color = None
-                    tile.data &= 0b11000111
-                else:
-                    color = message.payload.color
-                    tile.is_flag = True
-                    tile.color = color
+                color = message.payload.color
 
-                    # uh-oh..
-                    match color:
-                        case Color.RED:
-                            color_to_int = 0
-                        case Color.YELLOW:
-                            color_to_int = 1
-                        case Color.BLUE:
-                            color_to_int = 2
-                        case Color.PURPLE:
-                            color_to_int = 3
-
-                    color_to_int <<= 3
-
-                    tile.data |= 0b00100000 | color_to_int
+                tile.is_flag = not tile.is_flag
+                tile.color = color if tile.is_flag else None
 
         BoardHandler.update_tile(pointer, tile)
 
