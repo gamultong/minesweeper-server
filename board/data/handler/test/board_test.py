@@ -2,7 +2,7 @@ import unittest
 from tests.utils import cases
 from board.data import Point, Tile
 from board.data.handler import BoardHandler
-from .fixtures import setup_board_fake
+from .fixtures import setup_board
 
 FETCH_CASE = \
     [
@@ -11,28 +11,28 @@ FETCH_CASE = \
                 "start_p": Point(-2, 1),
                 "end_p": Point(1, -2)
             },
-            "expect": "df12df12er56er56"
+            "expect": "82818170818081018281813983680302"
         },
         {  # 전체
             "data": {
                 "start_p": Point(-4, 3),
                 "end_p": Point(3, -4)
             },
-            "expect": "asdf1234asdf1234asdf1234asdf1234qwer5678qwer5678qwer5678qwer5678"
+            "expect": "0102020100000000014040010101010001028281817001000121818081010100014082818139010181818368030240018080824003400201c080810102010100"
         },
         {  # 한개
             "data": {
                 "start_p": Point(0, 0),
                 "end_p": Point(0, 0)
             },
-            "expect": "1"
+            "expect": "81"
         }
     ]
 
 
 class BoardHandlerTestCase(unittest.TestCase):
     def setUp(self):
-        setup_board_fake()
+        setup_board()
 
     @cases(FETCH_CASE)
     def test_fetch(self, data, expect):

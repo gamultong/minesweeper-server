@@ -6,7 +6,7 @@ class Tiles:
     data: bytearray
 
     def to_str(self):
-        return self.data.decode("latin-1")
+        return self.data.hex()
 
     def hide_info(self):
         """

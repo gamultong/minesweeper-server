@@ -4,7 +4,7 @@ from fastapi.websockets import WebSocketDisconnect
 from server import app
 from message import Message
 from message.payload import FetchTilesPayload, TilesPayload, TilesEvent, NewConnEvent
-from board.data.handler.test.fixtures import setup_board_fake
+from board.data.handler.test.fixtures import setup_board
 from board.event.handler import BoardEventHandler
 from board.data import Point, Tile, Tiles
 from event import EventBroker
@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, patch
 
 class ServerTestCase(unittest.TestCase):
     def setUp(self):
-        setup_board_fake()
+        setup_board()
         self.client = TestClient(app)
 
         self.client.headers["X-View-Tiles-Width"] = "1"
@@ -60,26 +60,19 @@ class ServerTestCase(unittest.TestCase):
                 )
             )
 
-            empty_open = Tile.from_int(0b10000000)
-            one_open = Tile.from_int(0b10000001)
-            expected = Tiles(data=bytearray([
-                empty_open.data, one_open.data, one_open.data, one_open.data
-            ]))
-
             expect = Message(
                 event=TilesEvent.TILES,
                 payload=TilesPayload(
                     start_p=Point(-2, 1),
                     end_p=Point(1, -2),
-                    tiles=expected.to_str()
+                    tiles="82818130818081008281813883280000"
                 )
             )
 
             websocket.send_text(msg.to_str())
 
-            # TODO: 이거 고치기
-            # response = websocket.receive_text()
-            # self.assertEqual(response, expect.to_str())
+            response = websocket.receive_text()
+            self.assertEqual(response, expect.to_str())
 
 
 if __name__ == "__main__":

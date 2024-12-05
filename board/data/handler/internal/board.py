@@ -2,21 +2,21 @@ from board.data import Point, Section, Tile, Tiles
 
 DATA_PATH = "board/data/handler/internal/boarddata"
 
-SECTION_1 = Section.from_str(Point(-1, 0), open(f"{DATA_PATH}/data1.txt", "r").read())
-SECTION_2 = Section.from_str(Point(0, 0), open(f"{DATA_PATH}/data2.txt", "r").read())
-SECTION_3 = Section.from_str(Point(-1, -1), open(f"{DATA_PATH}/data3.txt", "r").read())
-SECTION_4 = Section.from_str(Point(0, -1), open(f"{DATA_PATH}/data4.txt", "r").read())
+# SECTION_1 = Section.from_str(Point(-1, 0), open(f"{DATA_PATH}/data1.txt", "r").read())
+# SECTION_2 = Section.from_str(Point(0, 0), open(f"{DATA_PATH}/data2.txt", "r").read())
+# SECTION_3 = Section.from_str(Point(-1, -1), open(f"{DATA_PATH}/data3.txt", "r").read())
+# SECTION_4 = Section.from_str(Point(0, -1), open(f"{DATA_PATH}/data4.txt", "r").read())
 
 BOARD_DATA = \
     {
-        0: {
-            0: SECTION_2,
-            -1: SECTION_1
-        },
-        -1: {
-            0: SECTION_4,
-            -1: SECTION_3
-        }
+        # 0: {
+        #     0: SECTION_2,
+        #     -1: SECTION_1
+        # },
+        # -1: {
+        #     0: SECTION_4,
+        #     -1: SECTION_3
+        # }
     }
 
 

@@ -6,7 +6,9 @@ from board.data import Section, Point, Tile, Tiles
 # 테스트를 위해 Section.LENGTH를 4로 설정
 Section.LENGTH = 4
 
-EXAPMLE_SECTION_DATA = "asdfASDFqwerQWER"
+# hex는 문자 2개 사용하기 때문에 2번 반복
+EXAPMLE_SECTION_DATA = "11223344556677889900aabbccddeeff"
+DATA_LENGTH = (Section.LENGTH ** 2) * 2
 
 EXAMPLE_POINT = Point(x=0, y=Section.LENGTH - 1)
 
@@ -27,7 +29,7 @@ FETCH_TEST_CASES = [
         "range": {
             "start_point": EXAMPLE_POINT
         },
-        "expect": EXAPMLE_SECTION_DATA[0]
+        "expect": EXAPMLE_SECTION_DATA[0: 2]
     },
     {
         "desc": "fetch end",
@@ -37,7 +39,7 @@ FETCH_TEST_CASES = [
                 y=0
             )
         },
-        "expect": EXAPMLE_SECTION_DATA[(Section.LENGTH ** 2) - 1]
+        "expect": EXAPMLE_SECTION_DATA[DATA_LENGTH - 2:]
     }
 ]
 
@@ -96,7 +98,7 @@ class SectionTestCase(unittest.TestCase):
         cols = 3
 
         # 업데이트용 row * col 크기의 2D bytearray 생성
-        data = bytearray().join([bytearray(f"{i}"*cols, "latin-1") for i in range(rows)])
+        data = bytearray().join([bytearray.fromhex(f"{i}{i}")*cols for i in range(rows)])
         value = Tiles(data)
         start = EXAMPLE_POINT
         end = Point(2, 1)

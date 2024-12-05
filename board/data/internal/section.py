@@ -54,7 +54,7 @@ class Section:
         """
         레거시, 관련 로직 바꿔야 함.
         """
-        return Section(p, bytearray(data, encoding="latin-1"))
+        return Section(p, bytearray.fromhex(data))
 
     @staticmethod
     def create(p: Point):
