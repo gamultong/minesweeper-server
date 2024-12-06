@@ -19,25 +19,18 @@ class ServerTestCase(unittest.TestCase):
         setup_board()
         self.client = TestClient(app)
 
-        self.client.headers["X-View-Tiles-Width"] = "1"
-        self.client.headers["X-View-Tiles-Height"] = "1"
-
     def tearDown(self):
-        self.client.headers = {}
+        self.client.params = {}
         self.client.close()
 
-    def test_no_headers(self):
-        self.client.headers = {}
-
+    def test_no_params(self):
         with self.assertRaises(WebSocketDisconnect) as cm:
             with self.client.websocket_connect("/session") as websocket:
                 websocket.close()
 
-    def test_wrong_headers(self):
-        self.client.headers["X-View-Tiles-Width"] = "string"
-
+    def test_wrong_params(self):
         with self.assertRaises(WebSocketDisconnect) as cm:
-            with self.client.websocket_connect("/session") as websocket:
+            with self.client.websocket_connect("/session?view_width=hello") as websocket:
                 websocket.close()
 
     @patch("event.EventBroker.publish")
@@ -51,7 +44,7 @@ class ServerTestCase(unittest.TestCase):
 
         mock.side_effect = filter_tiles_event
 
-        with self.client.websocket_connect("/session") as websocket:
+        with self.client.websocket_connect("/session", **{"params": {"view_width": 1, "view_height": 1}}) as websocket:
             msg = Message(
                 event=TilesEvent.FETCH_TILES,
                 payload=FetchTilesPayload(

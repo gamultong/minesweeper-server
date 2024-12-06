@@ -32,7 +32,7 @@ class BoardEventHandler():
     @EventBroker.add_receiver(NewConnEvent.NEW_CONN)
     @staticmethod
     async def receive_new_conn(message: Message[NewConnPayload]):
-        sender = message.header["sender"]
+        sender = message.payload.conn_id
 
         # 0, 0 기준으로 fetch
         width = message.payload.width

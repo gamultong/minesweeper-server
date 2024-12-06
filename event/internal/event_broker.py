@@ -83,5 +83,5 @@ class EventBroker:
             receiver = Receiver.get_receiver(id)
             await receiver(message)
 
-    async def _debug(message: Message):
+    def _debug(message: Message):
         print(message.to_str(del_header=False))

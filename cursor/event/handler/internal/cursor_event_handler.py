@@ -125,8 +125,11 @@ class CursorEventHandler:
 
         # TODO: 이거 본인 보고있는 커서들한테 보내야 함.
         message = Message(
-            event=PointEvent.POINTER_SET,
-            header={"target_conns": [cursor.conn_id]},
+            event="multicast",
+            header={
+                "target_conns": [cursor.conn_id],
+                "origin_event": PointEvent.POINTER_SET
+            },
             payload=PointerSetPayload(
                 origin_position=origin_pointer,
                 new_position=new_pointer,
