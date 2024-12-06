@@ -25,7 +25,8 @@ from message.payload import (
     TileUpdatedPayload,
     YouDiedPayload,
     ConnClosedPayload,
-    CursorQuitPayload
+    CursorQuitPayload,
+    SetViewSizePayload
 )
 
 
@@ -335,6 +336,43 @@ class CursorEventHandler:
             )
         )
         await EventBroker.publish(message)
+
+    @EventBroker.add_receiver(NewConnEvent.SET_VIEW_SIZE)
+    @staticmethod
+    async def receive_set_view_size(message: Message[SetViewSizePayload]):
+        sender = message.header["sender"]
+        cursor = CursorHandler.get_cursor(sender)
+
+        new_width, new_height = message.payload.width, message.payload.height
+
+        if new_width == cursor.width and new_height == cursor.height:
+            # 변동 없음
+            return
+
+        cur_watching = CursorHandler.get_watching(cursor_id=cursor.conn_id)
+
+        size_grown = new_width > cursor.width or new_height > cursor.height
+        cursor.set_size(new_width, new_height)
+
+        if size_grown:
+            top_left = Point(x=cursor.position.x - cursor.width, y=cursor.position.y + cursor.height)
+            bottom_right = Point(x=cursor.position.x + cursor.width, y=cursor.position.y - cursor.height)
+
+            cursors_range = CursorHandler.exists_range(top_left, bottom_right, cursor.conn_id)
+
+            new_watchings = list(filter(lambda c: c.conn_id not in cur_watching, cursors_range))
+
+            for other_cursor in new_watchings:
+                CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+
+            await publish_new_cursors_event(target_cursors=[cursor], cursors=new_watchings)
+
+        for id in cur_watching:
+            other_cursor = CursorHandler.get_cursor(id)
+            if cursor.check_in_view(other_cursor.position):
+                continue
+
+            CursorHandler.remove_watcher(watcher=cursor, watching=other_cursor)
 
 
 async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):
