@@ -295,7 +295,7 @@ class CursorEventHandler:
                 header={"target_conns": [c.conn_id for c in nearby_cursors],
                         "origin_event": InteractionEvent.YOU_DIED},
                 payload=YouDiedPayload(
-                    revive_at=revive_at
+                    revive_at=revive_at.astimezone().isoformat()
                 )
             )
             await EventBroker.publish(pub_message)

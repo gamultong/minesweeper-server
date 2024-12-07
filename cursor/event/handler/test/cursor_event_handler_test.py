@@ -804,9 +804,12 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
         self.assertIn("B", got.header["target_conns"])
         # payload 확인
         self.assertEqual(type(got.payload), YouDiedPayload)
+
+        from datetime import datetime
         # TODO
         # datetime.now mocking 후 test
         # self.assertEqual(got.payload.revive_at, something)
+        datetime.fromisoformat(got.payload.revive_at)
 
 
 class CursorEventHandler_ConnClosed_TestCase(unittest.IsolatedAsyncioTestCase):
