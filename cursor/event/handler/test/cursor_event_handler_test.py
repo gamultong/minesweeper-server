@@ -336,7 +336,11 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
         self.assertEqual(type(got), Message)
-        self.assertEqual(got.event, PointEvent.POINTER_SET)
+        self.assertEqual(got.event, "multicast")
+
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], PointEvent.POINTER_SET)
 
         # target_conns -> 본인 + B 에게 보내는지 확인
         self.assertIn("target_conns", got.header)
@@ -373,7 +377,11 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
         self.assertEqual(type(got), Message)
-        self.assertEqual(got.event, PointEvent.POINTER_SET)
+        self.assertEqual(got.event, "multicast")
+
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], PointEvent.POINTER_SET)
 
         # target_conns -> 본인 + B 에게 보내는지 확인
         self.assertIn("target_conns", got.header)
@@ -408,7 +416,11 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         mock.assert_called_once()
         got = mock.mock_calls[0].args[0]
         self.assertEqual(type(got), Message)
-        self.assertEqual(got.event, PointEvent.POINTER_SET)
+        self.assertEqual(got.event, "multicast")
+
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], PointEvent.POINTER_SET)
 
         # target_conns -> 본인 + B 에게 보내는지 확인
         self.assertIn("target_conns", got.header)
@@ -781,9 +793,12 @@ class CursorEventHandler_TileStateChanged_TestCase(unittest.IsolatedAsyncioTestC
         self.assertIn("B", got.header["target_conns"])
         # payload 확인
         self.assertEqual(type(got.payload), YouDiedPayload)
+
+        from datetime import datetime
         # TODO
         # datetime.now mocking 후 test
         # self.assertEqual(got.payload.revive_at, something)
+        datetime.fromisoformat(got.payload.revive_at)
 
 
 class CursorEventHandler_ConnClosed_TestCase(unittest.IsolatedAsyncioTestCase):

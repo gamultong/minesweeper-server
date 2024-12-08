@@ -1,9 +1,22 @@
 from board.data import Point, Section, Tile, Tiles
 
 
+def init_first_section() -> dict[int, dict[int, Section]]:
+    section_0_0 = Section.create(Point(0, 0))
+
+    tiles = section_0_0.fetch(Point(0, 0))
+
+    t = Tile.from_int(tiles.data[0])
+    t.is_open = True
+
+    section_0_0.update(Tiles(data=[t.data]), Point(0, 0))
+
+    return {0: {0: section_0_0}}
+
+
 class BoardHandler:
     # sections[y][x]
-    sections: dict[int, dict[int, Section]] = {}
+    sections: dict[int, dict[int, Section]] = init_first_section()
 
     @staticmethod
     def fetch(start: Point, end: Point) -> Tiles:
@@ -48,7 +61,12 @@ class BoardHandler:
         sec_p = Point(x=p.x // Section.LENGTH, y=p.y // Section.LENGTH)
         section = BoardHandler.sections[sec_p.y][sec_p.x]
 
-        section.update(data=tiles, start=p)
+        inner_p = Point(
+            x=p.x - section.abs_x,
+            y=p.y - section.abs_y
+        )
+
+        section.update(data=tiles, start=inner_p)
 
         # 지금은 안 해도 되긴 할텐데 일단 해 놓기
         BoardHandler.sections[sec_p.y][sec_p.x] = section

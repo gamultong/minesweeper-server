@@ -6,14 +6,14 @@ from cursor.data import Color
 from enum import Enum
 
 
-class PointEvent(Enum):
+class PointEvent(str, Enum):
     POINTING = "pointing"
     TRY_POINTING = "try-pointing"
     POINTING_RESULT = "pointing-result"
     POINTER_SET = "pointer-set"
 
 
-class ClickType(Enum):
+class ClickType(str, Enum):
     GENERAL_CLICK = "GENERAL_CLICK"
     SPECIAL_CLICK = "SPECIAL_CLICK"
 

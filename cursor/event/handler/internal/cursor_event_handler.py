@@ -129,8 +129,11 @@ class CursorEventHandler:
         watchers = CursorHandler.get_watchers(cursor.conn_id)
 
         message = Message(
-            event=PointEvent.POINTER_SET,
-            header={"target_conns":  [cursor.conn_id] + watchers},
+            event="multicast",
+            header={
+                "target_conns": [cursor.conn_id] + watchers,
+                "origin_event": PointEvent.POINTER_SET
+            },
             payload=PointerSetPayload(
                 origin_position=origin_pointer,
                 new_position=new_pointer,
@@ -296,7 +299,7 @@ class CursorEventHandler:
                 header={"target_conns": [c.conn_id for c in nearby_cursors],
                         "origin_event": InteractionEvent.YOU_DIED},
                 payload=YouDiedPayload(
-                    revive_at=revive_at
+                    revive_at=revive_at.astimezone().isoformat()
                 )
             )
             await EventBroker.publish(pub_message)
