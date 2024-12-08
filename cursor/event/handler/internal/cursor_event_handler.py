@@ -358,9 +358,8 @@ class CursorEventHandler:
             top_left = Point(x=cursor.position.x - cursor.width, y=cursor.position.y + cursor.height)
             bottom_right = Point(x=cursor.position.x + cursor.width, y=cursor.position.y - cursor.height)
 
-            cursors_range = CursorHandler.exists_range(top_left, bottom_right, cursor.conn_id)
-
-            new_watchings = list(filter(lambda c: c.conn_id not in cur_watching, cursors_range))
+            exclude_list = [cursor.conn_id] + cur_watching
+            new_watchings = CursorHandler.exists_range(top_left, bottom_right, *exclude_list)
 
             for other_cursor in new_watchings:
                 CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
