@@ -55,7 +55,7 @@ class BoardHandlerTestCase(unittest.TestCase):
         self.assertIsNotNone(BoardHandler.sections[sy][sx])
 
     def test_update_tile(self):
-        p = Point(1, 1)
+        p = Point(-1, -1)
 
         tile = Tile.from_int(0)
         BoardHandler.update_tile(p=p, tile=tile)

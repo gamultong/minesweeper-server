@@ -57,7 +57,12 @@ class BoardHandler:
         sec_p = Point(x=p.x // Section.LENGTH, y=p.y // Section.LENGTH)
         section = BoardHandler.sections[sec_p.y][sec_p.x]
 
-        section.update(data=tiles, start=p)
+        inner_p = Point(
+            x=p.x - section.abs_x,
+            y=p.y - section.abs_y
+        )
+
+        section.update(data=tiles, start=inner_p)
 
         # 지금은 안 해도 되긴 할텐데 일단 해 놓기
         BoardHandler.sections[sec_p.y][sec_p.x] = section
