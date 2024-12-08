@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "디버그 서버 띄우기",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "server"
+        },
+        {
             "name": "전체 테스트 (디버그)",
             "type": "debugpy",
             "request": "launch",
