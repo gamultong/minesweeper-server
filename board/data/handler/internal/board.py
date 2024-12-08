@@ -20,33 +20,37 @@ class BoardHandler:
 
     @staticmethod
     def fetch(start: Point, end: Point) -> Tiles:
-        out = bytearray()
+        # 반환할 데이터 공간 미리 할당
+        out_width, out_height = (end.x - start.x + 1), (start.y - end.y + 1)
+        out = bytearray(out_width * out_height)
 
         for sec_y in range(start.y // Section.LENGTH, end.y // Section.LENGTH - 1, - 1):
-            l = None
             for sec_x in range(start.x // Section.LENGTH, end.x // Section.LENGTH + 1):
                 section = BoardHandler._get_or_create_section(sec_x, sec_y)
 
-                start_p = Point(
+                inner_start = Point(
                     x=max(start.x, section.abs_x) - (section.abs_x),
                     y=min(start.y, section.abs_y + Section.LENGTH-1) - section.abs_y
                 )
-                end_p = Point(
+                inner_end = Point(
                     x=min(end.x, section.abs_x + Section.LENGTH-1) - section.abs_x,
                     y=max(end.y, section.abs_y) - section.abs_y
                 )
 
-                fetched = section.fetch(start=start_p, end=end_p)
+                fetched = section.fetch(start=inner_start, end=inner_end)
 
-                x_gap, y_gap = (end_p.x - start_p.x + 1), (start_p.y - end_p.y + 1)
-                if l == None:
-                    l = [fetched.data[i*x_gap:(i+1)*x_gap] for i in range(y_gap)]
-                    continue
+                x_gap, y_gap = (inner_end.x - inner_start.x + 1), (inner_start.y - inner_end.y + 1)
 
-                for i in range(y_gap):
-                    l[i] += fetched.data[i*x_gap:(i+1)*x_gap]
+                # start로부터 떨어진 거리
+                out_x = (section.abs_x + inner_start.x) - start.x
+                out_y = start.y - (section.abs_y + inner_start.y)
 
-            out += bytearray().join(l)
+                for row_num in range(y_gap):
+                    out_idx = (out_width * (out_y + row_num)) + out_x
+                    data_idx = row_num * x_gap
+
+                    data = fetched.data[data_idx:data_idx+x_gap]
+                    out[out_idx:out_idx+x_gap] = data
 
         return Tiles(data=out)
 

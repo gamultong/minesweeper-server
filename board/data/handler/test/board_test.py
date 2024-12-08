@@ -6,6 +6,13 @@ from .fixtures import setup_board
 
 FETCH_CASE = \
     [
+        {  # 한개
+            "data": {
+                "start_p": Point(0, 0),
+                "end_p": Point(0, 0)
+            },
+            "expect": "81"
+        },
         {  # 가운데
             "data": {
                 "start_p": Point(-2, 1),
@@ -19,13 +26,6 @@ FETCH_CASE = \
                 "end_p": Point(3, -4)
             },
             "expect": "0102020100000000014040010101010001028281817001000121818081010100014082818139010181818368030240018080824003400201c080810102010100"
-        },
-        {  # 한개
-            "data": {
-                "start_p": Point(0, 0),
-                "end_p": Point(0, 0)
-            },
-            "expect": "81"
         }
     ]
 
