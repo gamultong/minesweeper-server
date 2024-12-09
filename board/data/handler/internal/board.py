@@ -82,12 +82,3 @@ class BoardHandler:
             BoardHandler.sections[y][x] = new_section
 
         return BoardHandler.sections[y][x]
-
-    @staticmethod
-    def _debug():
-        for y in BoardHandler.sections:
-            for x in BoardHandler.sections[y]:
-                print("=================================")
-                print(f"Section x :", x)
-                print(f"        y :", y)
-                BoardHandler.sections[y][x]._debug()

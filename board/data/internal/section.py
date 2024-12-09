@@ -1,6 +1,8 @@
 from .point import Point
+from .tile import Tile
 from .tiles import Tiles
 from random import randint
+from typing import Callable
 
 
 class Section:
@@ -59,62 +61,96 @@ class Section:
     @staticmethod
     def create(p: Point):
         total = Section.LENGTH**2
-        tiles = int((total * (1-Section.MINE_RATIO))//1)
-        mine = total - tiles
+        mine_cnt = int((total * Section.MINE_RATIO)//1)
 
-        def rand_choice():
-            nonlocal mine
-            nonlocal tiles
-            r = randint(1, tiles+mine)
-            q = tiles >= r
-            if q:
-                tiles -= 1
-            else:
-                mine -= 1
-            return q
+        mine = 0b01000000
+        num_mask = 0b00000111
 
-        mine_tile = 0b01000000
-        closed_tile = 0b00000000
+        # zero-value로 초기화됨,
+        data = bytearray(total)
 
-        data = bytearray(
-            closed_tile if rand_choice() else mine_tile
-            for _ in range(total)
-        )
+        for _ in range(mine_cnt):
+            # 랜덤 위치가 잘못된 경우 재시도
+            while True:
+                rand_p = Point(
+                    x=randint(0, Section.LENGTH - 1),
+                    y=randint(0, Section.LENGTH - 1)
+                )
 
-        # (x, y)
-        delta = [
-            (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
-            (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
-        ]
+                rand_idx = (rand_p.y * Section.LENGTH) + rand_p.x
+                cur_tile = data[rand_idx]
 
-        # 지뢰 주변에 숫자 1씩 증가시키기
-        for y in range(Section.LENGTH):
-            for x in range(Section.LENGTH):
-                idx = (y * Section.LENGTH) + x
-                tile = data[idx]
-
-                if tile != mine_tile:
+                # 이미 지뢰가 존재
+                if cur_tile == mine:
                     continue
 
-                # 주변 탐색
-                for dx, dy in delta:
-                    nx, ny = x+dx, y+dy
-                    if \
-                            nx < 0 or nx >= Section.LENGTH or \
-                            ny < 0 or ny >= Section.LENGTH:
-                        continue
+                # 주변 타일 검사
+                invalid = False
 
-                    new_idx = (ny * Section.LENGTH) + nx
-                    nearby_tile = data[new_idx]
+                def check_neighbor_restrictions(t: int) -> tuple[Tile | None, bool]:
+                    nonlocal invalid
+                    # 주변 타일이 7을 넘지 않아야 함
+                    if t & num_mask == 7:
+                        invalid = True
 
-                    if nearby_tile == mine_tile:
-                        continue
+                    return None, invalid
 
-                    # 숫자 증가
-                    nearby_tile += 1
-                    data[new_idx] = nearby_tile
+                for_each_neighbor(tiles=data, p=rand_p, func=check_neighbor_restrictions)
+                if invalid:
+                    continue
+
+                data[rand_idx] = mine
+
+                # 주변 타일 숫자 증가
+                def increase_number(t: int) -> tuple[Tile | None, bool]:
+                    if t == mine:
+                        return None, False
+
+                    t += 1
+
+                    return t, False
+
+                for_each_neighbor(tiles=data, p=rand_p, func=increase_number)
+
+                break
 
         return Section(p=p, data=data)
+
+
+# (x, y)
+_delta = [
+    (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
+    (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
+]
+
+
+def for_each_neighbor(tiles: bytearray, p: Point, func: Callable[[int], tuple[int | None, bool]]):
+    """
+    p(section 내부 좌표)의 주변 8방향의 인접 타일을 돌며 func를 실행.
+    만약 인접 타일이 section의 범위를 벗어난다면 무시함.
+
+    [func 반환값]
+    tile: None이 아니면 타일을 업데이트.
+    stop: True면 반복 중지
+    """
+
+    # 주변 탐색
+    for dx, dy in _delta:
+        np = Point(p.x+dx, p.y+dy)
+        if \
+                np.x < 0 or np.x >= Section.LENGTH or \
+                np.y < 0 or np.y >= Section.LENGTH:
+            continue
+
+        new_idx = (np.y * Section.LENGTH) + np.x
+        nearby_tile = tiles[new_idx]
+
+        tile, stop = func(nearby_tile)
+        if tile is not None:
+            tiles[new_idx] = tile
+
+        if stop:
+            break
 
 
 if __name__ == "__main__":
