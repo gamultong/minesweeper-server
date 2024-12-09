@@ -1,6 +1,6 @@
 import unittest
 from tests.utils import cases
-from board.data import Section, Point, Tile, Tiles
+from board.data import Section, Point, Tile, Tiles, for_each_neighbor
 
 
 # 테스트를 위해 Section.LENGTH를 4로 설정
@@ -120,14 +120,14 @@ class SectionTestCase(unittest.TestCase):
         sec = Section.create(Point(0, 0))
 
         total = Section.LENGTH ** 2
-        tile_count = int((total * (1 - Section.MINE_RATIO))//1)
-        mine_count = total - tile_count
+        mine_cnt = int((total * Section.MINE_RATIO)//1)
 
         self.assertEqual(len(sec.data), total)
-        self.assertEqual(sec.data.count(mine.data), mine_count)
+        self.assertEqual(sec.data.count(mine.data), mine_cnt)
 
         num_mask = 0b00000111
-        # 숫자 정확한지 확인
+        mine_tile = 0b01000000
+
         for y in range(Section.LENGTH):
             for x in range(Section.LENGTH):
                 idx = (y * Section.LENGTH) + x
@@ -135,38 +135,28 @@ class SectionTestCase(unittest.TestCase):
                 if tile == mine.data:
                     continue
 
+                result = 0
+
+                # 숫자가 제대로 기록되어 있는가
+                def count_num(t: int) -> tuple[int | None, bool]:
+                    nonlocal result
+                    if t == mine_tile:
+                        result += 1
+
+                    return None, False
+
+                for_each_neighbor(sec.data, Point(x, y), func=count_num)
+
                 got = tile & num_mask
-                expected = check_neighbor_mine_count(sec, Point(x, y))
 
-                self.assertEqual(got, expected)
+                self.assertEqual(got, result)
 
+                # 숫자가 7을 넘지 않는가
+                def check_number_restriction(t: int) -> tuple[int | None, bool]:
+                    self.assertLessEqual(t & num_mask,  7)
+                    return None, False
 
-# (x, y)
-DELTA = [
-    (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
-    (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
-]
-
-MINE_TILE = 0b01000000
-
-
-def check_neighbor_mine_count(section: Section, pos: Point) -> int:
-    result = 0
-    # 주변 탐색
-    for dx, dy in DELTA:
-        nx, ny = pos.x+dx, pos.y+dy
-        if \
-                nx < 0 or nx >= Section.LENGTH or \
-                ny < 0 or ny >= Section.LENGTH:
-            continue
-
-        new_idx = (ny * Section.LENGTH) + nx
-        nearby_tile = section.data[new_idx]
-
-        if nearby_tile == MINE_TILE:
-            result += 1
-
-    return result
+                for_each_neighbor(sec.data, Point(x, y), func=check_number_restriction)
 
 
 if __name__ == "__main__":
