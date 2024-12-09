@@ -23,7 +23,8 @@ from message.payload import (
     YouDiedPayload,
     TileUpdatedPayload,
     ConnClosedPayload,
-    CursorQuitPayload
+    CursorQuitPayload,
+    SetViewSizePayload
 )
 from .fixtures import setup_cursor_locations
 import unittest
@@ -853,6 +854,106 @@ class CursorEventHandler_ConnClosed_TestCase(unittest.IsolatedAsyncioTestCase):
 
         # 커서 지워졌나 확인
         self.assertIsNone(CursorHandler.get_cursor(self.cur_a.conn_id))
+
+
+class CursorEventHandler_SetViewSize_TestCase(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        curs = setup_cursor_locations()
+        self.cur_a = curs[0]
+        self.cur_b = curs[1]
+        self.cur_c = curs[2]
+
+    def tearDown(self):
+        CursorHandler.cursor_dict = {}
+        CursorHandler.watchers = {}
+        CursorHandler.watching = {}
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_set_view_size_grow_shrink_both(self, mock: AsyncMock):
+        message = Message(
+            event=NewConnEvent.SET_VIEW_SIZE,
+            header={"sender": self.cur_a.conn_id},
+            payload=SetViewSizePayload(
+                width=self.cur_a.width-2,
+                height=self.cur_a.height+1
+            )
+        )
+
+        await CursorEventHandler.receive_set_view_size(message)
+
+        mock.assert_called_once()
+
+        # cursors
+        got: Message[CursorsPayload] = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], NewConnEvent.CURSORS)
+        # target_conns 확인, [A]
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertIn(self.cur_a.conn_id, got.header["target_conns"])
+        # payload 확인
+        self.assertEqual(type(got.payload), CursorsPayload)
+        self.assertEqual(len(got.payload.cursors), 1)
+        self.assertEqual(got.payload.cursors[0].color, self.cur_b.color)
+        self.assertEqual(got.payload.cursors[0].position, self.cur_b.position)
+
+        # watcher 관계 확인
+        a_watching = CursorHandler.get_watching("A")
+        self.assertEqual(len(a_watching), 1)
+        self.assertIn("B", a_watching)
+
+        b_watchers = CursorHandler.get_watchers("B")
+        self.assertEqual(len(b_watchers), 1)
+        self.assertIn("A", b_watchers)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_set_view_size_same(self, mock: AsyncMock):
+        message = Message(
+            event=NewConnEvent.SET_VIEW_SIZE,
+            header={"sender": self.cur_a.conn_id},
+            payload=SetViewSizePayload(
+                width=self.cur_a.width,
+                height=self.cur_a.height
+            )
+        )
+
+        await CursorEventHandler.receive_set_view_size(message)
+
+        mock.assert_not_called()
+
+        # watcher 관계 확인
+        a_watching = CursorHandler.get_watching("A")
+        self.assertEqual(len(a_watching), 1)
+        self.assertIn("C", a_watching)
+
+        b_watchers = CursorHandler.get_watchers("B")
+        self.assertEqual(len(b_watchers), 0)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_set_view_size_shrink(self, mock: AsyncMock):
+        message = Message(
+            event=NewConnEvent.SET_VIEW_SIZE,
+            header={"sender": self.cur_b.conn_id},
+            payload=SetViewSizePayload(
+                width=self.cur_b.width,
+                height=self.cur_b.height-1
+            )
+        )
+
+        await CursorEventHandler.receive_set_view_size(message)
+
+        mock.assert_not_called()
+
+        # watcher 관계 확인
+        b_watching = CursorHandler.get_watching("B")
+        self.assertEqual(len(b_watching), 1)
+        self.assertIn("C", b_watching)
+
+        a_watchers = CursorHandler.get_watchers("A")
+        self.assertEqual(len(a_watchers), 0)
 
 
 if __name__ == "__main__":

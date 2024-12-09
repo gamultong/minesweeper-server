@@ -1,5 +1,16 @@
 from typing import Generic, TypeVar
-from message.payload import Payload, TilesEvent, PointEvent, MoveEvent, FetchTilesPayload, TilesPayload, PointingPayload, MovingPayload
+from message.payload import (
+    Payload,
+    TilesEvent,
+    PointEvent,
+    MoveEvent,
+    FetchTilesPayload,
+    TilesPayload,
+    PointingPayload,
+    MovingPayload,
+    NewConnEvent,
+    SetViewSizePayload
+)
 from .exceptions import InvalidEventTypeException
 
 import json
@@ -13,7 +24,8 @@ DECODABLE_PAYLOAD_DICT: dict[str, Payload] = {
     TilesEvent.FETCH_TILES: FetchTilesPayload,
     TilesEvent.TILES: TilesPayload,
     PointEvent.POINTING: PointingPayload,
-    MoveEvent.MOVING: MovingPayload
+    MoveEvent.MOVING: MovingPayload,
+    NewConnEvent.SET_VIEW_SIZE: SetViewSizePayload
 }
 
 
