@@ -1,4 +1,5 @@
 from board.data import Tile, Tiles
+from cursor.data import Color
 
 import unittest
 
@@ -35,3 +36,19 @@ class TilesTestCase(unittest.TestCase):
 
         self.assertEqual(open_tile.data, data[0])
         self.assertEqual(closed_tile.copy(hide_info=True).data, data[1])
+
+    def test_hide_info_flag(self):
+        flag_tile = Tile.create(
+            is_open=False,
+            is_mine=True,
+            is_flag=True,
+            color=Color.RED,
+            number=None
+        )
+
+        tiles = Tiles(data=bytearray([flag_tile.data]))
+
+        tiles.hide_info()
+        data = tiles.data
+
+        self.assertEqual(flag_tile.copy(hide_info=True).data, data[0])

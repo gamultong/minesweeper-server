@@ -179,6 +179,8 @@ class TileTestCase(unittest.TestCase):
         self.assertEqual(tile.color, color)
         self.assertEqual(tile.number, number)
 
+        self.assertEqual(tile.data, b)
+
     def test_tile_copy(self):
         tile = Tile.create(
             is_open=False,
