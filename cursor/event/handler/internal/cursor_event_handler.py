@@ -83,7 +83,6 @@ class CursorEventHandler:
     @EventBroker.add_receiver(PointEvent.POINTING)
     @staticmethod
     async def receive_pointing(message: Message[PointingPayload]):
-
         sender = message.header["sender"]
 
         cursor = CursorHandler.get_cursor(sender)
@@ -104,6 +103,7 @@ class CursorEventHandler:
             event=PointEvent.TRY_POINTING,
             header={"sender": sender},
             payload=TryPointingPayload(
+                cursor_position=cursor.position,
                 new_pointer=new_pointer,
                 color=cursor.color,
                 click_type=message.payload.click_type

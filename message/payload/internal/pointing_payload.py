@@ -26,6 +26,7 @@ class PointingPayload(Payload):
 
 @dataclass
 class TryPointingPayload(Payload):
+    cursor_position: ParsablePayload[Point]
     new_pointer: ParsablePayload[Point]
     color: Color
     click_type: ClickType

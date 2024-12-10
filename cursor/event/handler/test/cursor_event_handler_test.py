@@ -293,6 +293,7 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         self.assertEqual(type(got.payload), TryPointingPayload)
         self.assertEqual(got.payload.click_type, click_type)
         self.assertEqual(got.payload.color, cursor.color)
+        self.assertEqual(got.payload.cursor_position, cursor.position)
         self.assertEqual(got.payload.new_pointer, Point(0, 0))
 
     @patch("event.EventBroker.publish")
