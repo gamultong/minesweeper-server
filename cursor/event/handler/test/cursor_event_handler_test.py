@@ -24,7 +24,9 @@ from message.payload import (
     TileUpdatedPayload,
     ConnClosedPayload,
     CursorQuitPayload,
-    SetViewSizePayload
+    SetViewSizePayload,
+    ErrorEvent,
+    ErrorPayload
 )
 from .fixtures import setup_cursor_locations
 import unittest
@@ -265,7 +267,6 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
 
     @patch("event.EventBroker.publish")
     async def test_receive_pointing(self, mock: AsyncMock):
-        # TODO: out of bounds 테스트
         click_type = ClickType.GENERAL_CLICK
         pointer = Point(0, 0)
 
@@ -297,6 +298,41 @@ class CursorEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestC
         self.assertEqual(got.payload.color, self.cur_a.color)
         self.assertEqual(got.payload.cursor_position, self.cur_a.position)
         self.assertEqual(got.payload.new_pointer, pointer)
+
+    @patch("event.EventBroker.publish")
+    async def test_receive_pointing_out_of_bound(self, mock: AsyncMock):
+        click_type = ClickType.GENERAL_CLICK
+        pointer = Point(100, 0)
+
+        message = Message(
+            event=PointEvent.POINTING,
+            header={"sender": self.cur_a.conn_id},
+            payload=PointingPayload(
+                click_type=click_type,
+                position=pointer
+            )
+        )
+
+        await CursorEventHandler.receive_pointing(message)
+
+        # error 발행하는지 확인
+        mock.assert_called_once()
+        got = mock.mock_calls[0].args[0]
+        self.assertEqual(type(got), Message)
+        self.assertEqual(got.event, "multicast")
+
+        # origin_event
+        self.assertIn("origin_event", got.header)
+        self.assertEqual(got.header["origin_event"], ErrorEvent.ERROR)
+
+        # target_conns -> 본인에게 보내는지 확인
+        self.assertIn("target_conns", got.header)
+        self.assertEqual(len(got.header["target_conns"]), 1)
+        self.assertIn("A", got.header["target_conns"])
+
+        # payload 확인
+        self.assertEqual(type(got.payload), ErrorPayload)
+        self.assertEqual(got.payload.msg, "pointer is out of cursor view")
 
     @patch("event.EventBroker.publish")
     async def test_receive_pointing_dead(self, mock: AsyncMock):

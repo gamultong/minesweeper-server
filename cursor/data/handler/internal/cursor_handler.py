@@ -24,7 +24,6 @@ class CursorHandler:
 
     @staticmethod
     def remove_cursor(conn_id: str):
-        # TODO: 예외 처리?
         if conn_id in CursorHandler.cursor_dict:
             del CursorHandler.cursor_dict[conn_id]
 

@@ -64,12 +64,9 @@ class BoardEventHandler():
     @EventBroker.add_receiver(PointEvent.TRY_POINTING)
     @staticmethod
     async def receive_try_pointing(message: Message[TryPointingPayload]):
-        pointer = message.payload.new_pointer
-
-        if "sender" not in message.header:
-            raise "header 없음"
-
         sender = message.header["sender"]
+
+        pointer = message.payload.new_pointer
 
         tiles = BoardHandler.fetch(
             Point(pointer.x-1, pointer.y+1),

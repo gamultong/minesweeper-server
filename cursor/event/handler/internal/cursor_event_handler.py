@@ -26,7 +26,9 @@ from message.payload import (
     YouDiedPayload,
     ConnClosedPayload,
     CursorQuitPayload,
-    SetViewSizePayload
+    SetViewSizePayload,
+    ErrorEvent,
+    ErrorPayload
 )
 
 
@@ -97,8 +99,15 @@ class CursorEventHandler:
 
         # 뷰 바운더리 안에서 포인팅하는지 확인
         if not cursor.check_in_view(new_pointer):
-            # TODO: 예외 처리?
-            raise "커서 뷰 바운더리 벗어난 곳에 포인팅함"
+            await EventBroker.publish(Message(
+                event="multicast",
+                header={
+                    "origin_event": ErrorEvent.ERROR,
+                    "target_conns": [sender]
+                },
+                payload=ErrorPayload(msg="pointer is out of cursor view")
+            ))
+            return
 
         message = Message(
             event=PointEvent.TRY_POINTING,
