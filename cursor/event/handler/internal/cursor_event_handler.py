@@ -25,7 +25,8 @@ from message.payload import (
     TileUpdatedPayload,
     YouDiedPayload,
     ConnClosedPayload,
-    CursorQuitPayload
+    CursorQuitPayload,
+    SetViewSizePayload
 )
 
 
@@ -123,11 +124,16 @@ class CursorEventHandler:
         origin_pointer = cursor.pointer
         cursor.pointer = new_pointer
 
-        # TODO: 이거 본인 보고있는 커서들한테 보내야 함.
+        if origin_pointer is None and new_pointer is None:
+            # 변동 없음
+            return
+
+        watchers = CursorHandler.get_watchers(cursor.conn_id)
+
         message = Message(
             event="multicast",
             header={
-                "target_conns": [cursor.conn_id],
+                "target_conns": [cursor.conn_id] + watchers,
                 "origin_event": PointEvent.POINTER_SET
             },
             payload=PointerSetPayload(
@@ -331,6 +337,42 @@ class CursorEventHandler:
             )
         )
         await EventBroker.publish(message)
+
+    @EventBroker.add_receiver(NewConnEvent.SET_VIEW_SIZE)
+    @staticmethod
+    async def receive_set_view_size(message: Message[SetViewSizePayload]):
+        sender = message.header["sender"]
+        cursor = CursorHandler.get_cursor(sender)
+
+        new_width, new_height = message.payload.width, message.payload.height
+
+        if new_width == cursor.width and new_height == cursor.height:
+            # 변동 없음
+            return
+
+        cur_watching = CursorHandler.get_watching(cursor_id=cursor.conn_id)
+
+        size_grown = new_width > cursor.width or new_height > cursor.height
+        cursor.set_size(new_width, new_height)
+
+        if size_grown:
+            top_left = Point(x=cursor.position.x - cursor.width, y=cursor.position.y + cursor.height)
+            bottom_right = Point(x=cursor.position.x + cursor.width, y=cursor.position.y - cursor.height)
+
+            exclude_list = [cursor.conn_id] + cur_watching
+            new_watchings = CursorHandler.exists_range(top_left, bottom_right, *exclude_list)
+
+            for other_cursor in new_watchings:
+                CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+
+            await publish_new_cursors_event(target_cursors=[cursor], cursors=new_watchings)
+
+        for id in cur_watching:
+            other_cursor = CursorHandler.get_cursor(id)
+            if cursor.check_in_view(other_cursor.position):
+                continue
+
+            CursorHandler.remove_watcher(watcher=cursor, watching=other_cursor)
 
 
 async def publish_new_cursors_event(target_cursors: list[Cursor], cursors: list[Cursor]):

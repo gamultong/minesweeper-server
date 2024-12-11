@@ -12,6 +12,7 @@ class NewConnEvent(str, Enum):
     MY_CURSOR = "my-cursor"
     CONN_CLOSED = "conn-closed"
     CURSOR_QUIT = "cursor-quit"
+    SET_VIEW_SIZE = "set-view-size"
 
 
 @dataclass
@@ -45,3 +46,9 @@ class ConnClosedPayload(Payload):
 @dataclass
 class CursorQuitPayload(CursorPayload):
     pass
+
+
+@dataclass
+class SetViewSizePayload(Payload):
+    width: int
+    height: int
