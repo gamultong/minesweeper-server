@@ -168,13 +168,15 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.sender_id = "ayo"
 
     @patch("event.EventBroker.publish")
-    async def test_try_pointing_pointable(self, mock: AsyncMock):
+    async def test_try_pointing_pointable_not_interactable(self, mock: AsyncMock):
+        cursor_pos = Point(2, 2)
         pointer = Point(0, 0)
 
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
+                cursor_position=cursor_pos,
                 new_pointer=pointer,
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
@@ -199,14 +201,16 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertTrue(got.payload.pointable)
         self.assertEqual(got.payload.pointer, pointer)
 
-    @ patch("event.EventBroker.publish")
+    @patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_general_click(self, mock: AsyncMock):
+        cursor_pos = Point(0, 0)
         pointer = Point(1, 0)
 
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
+                cursor_position=cursor_pos,
                 new_pointer=pointer,
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
@@ -251,14 +255,16 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
 
-    @ patch("event.EventBroker.publish")
+    @patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_general_click_flag(self, mock: AsyncMock):
+        cursor_pos = Point(0, 0)
         pointer = Point(1, 1)
 
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
+                cursor_position=cursor_pos,
                 new_pointer=pointer,
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
@@ -283,8 +289,9 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertTrue(got.payload.pointable)
         self.assertEqual(got.payload.pointer, pointer)
 
-    @ patch("event.EventBroker.publish")
+    @patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_special_click(self, mock: AsyncMock):
+        cursor_pos = Point(0, 0)
         pointer = Point(1, 0)
         color = Color.BLUE
 
@@ -292,6 +299,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
             event=PointEvent.TRY_POINTING,
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
+                cursor_position=cursor_pos,
                 new_pointer=pointer,
                 click_type=ClickType.SPECIAL_CLICK,
                 color=color
@@ -337,8 +345,9 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
 
-    @ patch("event.EventBroker.publish")
+    @patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_special_click_already_flag(self, mock: AsyncMock):
+        cursor_pos = Point(0, 0)
         pointer = Point(1, 1)
         color = Color.BLUE
 
@@ -346,6 +355,7 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
             event=PointEvent.TRY_POINTING,
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
+                cursor_position=cursor_pos,
                 new_pointer=pointer,
                 click_type=ClickType.SPECIAL_CLICK,
                 color=color
@@ -391,14 +401,16 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
 
-    @ patch("event.EventBroker.publish")
+    @patch("event.EventBroker.publish")
     async def test_try_pointing_not_pointable(self, mock: AsyncMock):
+        cursor_pos = Point(0, 0)
         pointer = Point(2, 0)
 
         message = Message(
             event=PointEvent.TRY_POINTING,
             header={"sender": self.sender_id},
             payload=TryPointingPayload(
+                cursor_position=cursor_pos,
                 new_pointer=pointer,
                 click_type=ClickType.GENERAL_CLICK,
                 color=Color.BLUE
