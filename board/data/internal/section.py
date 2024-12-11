@@ -1,6 +1,7 @@
 from .point import Point
 from .tile import Tile
 from .tiles import Tiles
+from .exceptions import InvalidDataLengthException
 from random import randint
 from typing import Callable
 
@@ -34,7 +35,7 @@ class Section:
 
         expected_len = (end.x - start.x + 1) * (start.y - end.y + 1)
         if len(data.data) != expected_len:
-            raise "예상 길이와 다름"
+            raise InvalidDataLengthException(expected=expected_len, actual=len(data.data))
 
         x_gap = end.x - start.x + 1
 

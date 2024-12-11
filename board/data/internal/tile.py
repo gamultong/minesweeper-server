@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from cursor.data import Color
-from .tile_exception import InvalidTileException
+from .exceptions import InvalidTileException
 
 
 @dataclass

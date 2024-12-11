@@ -1,2 +1,0 @@
-class InvalidTileException(Exception):
-    pass

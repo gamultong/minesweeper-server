@@ -79,16 +79,18 @@ class CursorHandler:
         watching_id = watching.conn_id
 
         watcher_exists = CursorHandler.check_cursor_exists(watcher_id)
-        watching_exists = CursorHandler.check_cursor_exists(watching_id)
+        if not watcher_exists:
+            raise NoMatchingCursorException(watcher_id)
 
-        if not (watcher_exists and watching_exists):
-            raise NoMatchingCursorException()
+        watching_exists = CursorHandler.check_cursor_exists(watching_id)
+        if not watching_exists:
+            raise NoMatchingCursorException(watching_id)
 
         if CursorHandler.check_cursor_watching(watching_id, watcher_id):
-            raise AlreadyWatchingException()
+            raise AlreadyWatchingException(watcher=watcher_id, watching=watching_id)
 
         if not watcher.check_in_view(watching.position):
-            raise NotWatchableException()
+            raise NotWatchableException(p=watching.position, cursor_id=watcher.conn_id)
 
         if not watcher_id in CursorHandler.watching:
             CursorHandler.watching[watcher_id] = []
@@ -104,13 +106,15 @@ class CursorHandler:
         watching_id = watching.conn_id
 
         watcher_exists = CursorHandler.check_cursor_exists(watcher_id)
-        watching_exists = CursorHandler.check_cursor_exists(watching_id)
+        if not watcher_exists:
+            raise NoMatchingCursorException(watcher_id)
 
-        if not (watcher_exists and watching_exists):
-            raise NoMatchingCursorException()
+        watching_exists = CursorHandler.check_cursor_exists(watching_id)
+        if not watching_exists:
+            raise NoMatchingCursorException(watching_id)
 
         if not CursorHandler.check_cursor_watching(watching_id, watcher_id):
-            raise NotWatchingException()
+            raise NotWatchingException(watcher=watcher_id, watching=watching_id)
 
         CursorHandler.watching[watcher_id].remove(watching_id)
         if len(CursorHandler.watching[watcher_id]) == 0:
@@ -123,7 +127,7 @@ class CursorHandler:
     @staticmethod
     def get_watchers(cursor_id: str) -> list[str]:
         if not CursorHandler.check_cursor_exists(cursor_id):
-            raise NoMatchingCursorException()
+            raise NoMatchingCursorException(cursor_id)
 
         if cursor_id in CursorHandler.watchers:
             return CursorHandler.watchers[cursor_id].copy()
@@ -133,7 +137,7 @@ class CursorHandler:
     @staticmethod
     def get_watching(cursor_id: str) -> list[str]:
         if not CursorHandler.check_cursor_exists(cursor_id):
-            raise NoMatchingCursorException()
+            raise NoMatchingCursorException(cursor_id)
 
         if cursor_id in CursorHandler.watching:
             return CursorHandler.watching[cursor_id].copy()
