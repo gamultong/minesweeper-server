@@ -1,7 +1,7 @@
 from fastapi.websockets import WebSocket
 from conn import Conn
 from message import Message
-from message.payload import NewConnEvent, NewConnPayload, ConnClosedPayload
+from message.payload import NewConnEvent, NewConnPayload, ConnClosedPayload, DumbHumanException
 from event import EventBroker
 from uuid import uuid4
 
@@ -74,11 +74,11 @@ class ConnectionManager:
     async def receive_multicast_event(message: Message):
         overwrite_event(message)
         if "target_conns" not in message.header:
-            raise "header에 target_conns 없음"
+            raise DumbHumanException()
         for conn_id in message.header["target_conns"]:
             conn = ConnectionManager.get_conn(conn_id)
             if not conn:
-                raise "connection 없음"
+                raise DumbHumanException()
 
             await conn.send(message)
 
