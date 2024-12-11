@@ -78,7 +78,35 @@ class BoardHandler:
 
         if x not in BoardHandler.sections[y]:
             new_section = Section.create(Point(x, y))
-            # TODO: 주변 섹션과의 접경타일들 숫자 업데이트
+
+            # (x, y)
+            delta = [
+                (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
+                (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
+            ]
+
+            # 주변 섹션과 새로운 섹션의 인접 타일을 서로 적용시킨다.
+            for dx, dy in delta:
+                nx, ny = x+dx, y+dy
+                neighbor = BoardHandler._get_section_or_none(nx, ny)
+                # 주변 섹션이 없을 수 있음.
+                if neighbor is None:
+                    continue
+
+                if dx != 0 and dy != 0:
+                    neighbor.apply_neighbor_diagonal(new_section)
+                elif dx != 0:
+                    neighbor.apply_neighbor_horizontal(new_section)
+                elif dy != 0:
+                    neighbor.apply_neighbor_vertical(new_section)
+
+                BoardHandler.sections[ny][nx] = neighbor
+
             BoardHandler.sections[y][x] = new_section
 
         return BoardHandler.sections[y][x]
+
+    @staticmethod
+    def _get_section_or_none(x: int, y: int) -> Section | None:
+        if y in BoardHandler.sections and x in BoardHandler.sections[y]:
+            return BoardHandler.sections[y][x]
