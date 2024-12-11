@@ -6,3 +6,4 @@ from .internal.parsable_payload import ParsablePayload
 from .internal.pointing_payload import PointerSetPayload, PointingResultPayload, PointingPayload, TryPointingPayload, PointEvent, ClickType
 from .internal.move_payload import MoveEvent, MovingPayload, MovedPayload, CheckMovablePayload, MovableResultPayload
 from .internal.interaction_payload import TileStateChangedPayload, TileUpdatedPayload, YouDiedPayload, InteractionEvent
+from .internal.error_payload import ErrorEvent, ErrorPayload
