@@ -94,7 +94,17 @@ class BoardEventHandler():
 
         await EventBroker.publish(pub_message)
 
+        cursor_pos = message.payload.cursor_position
+
         if not pointable:
+            return
+
+        # 인터랙션 범위 체크
+        if \
+                pointer.x < cursor_pos.x - 1 or \
+                pointer.x > cursor_pos.x + 1 or \
+                pointer.y < cursor_pos.y - 1 or \
+                pointer.y > cursor_pos.y + 1:
             return
 
         # 보드 상태 업데이트하기
