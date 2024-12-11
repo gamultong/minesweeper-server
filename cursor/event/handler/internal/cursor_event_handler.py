@@ -164,11 +164,26 @@ class CursorEventHandler:
         new_position = message.payload.position
 
         if new_position == cursor.position:
-            # TODO: 예외 처리
-            raise "기존 위치와 같은 위치로 이동"
+            await EventBroker.publish(Message(
+                event="multicast",
+                header={
+                    "origin_event": ErrorEvent.ERROR,
+                    "target_conns": [sender]
+                },
+                payload=ErrorPayload(msg="moving to current position is not allowed")
+            ))
+            return
 
         if not cursor.check_interactable(new_position):
-            raise "주변 8칸 벗어남"
+            await EventBroker.publish(Message(
+                event="multicast",
+                header={
+                    "origin_event": ErrorEvent.ERROR,
+                    "target_conns": [sender]
+                },
+                payload=ErrorPayload(msg="only moving to 8 nearby tiles is allowed")
+            ))
+            return
 
         message = Message(
             event=MoveEvent.CHECK_MOVABLE,
@@ -188,7 +203,14 @@ class CursorEventHandler:
         cursor = CursorHandler.get_cursor(receiver)
 
         if not message.payload.movable:
-            # TODO: 사용자에게 알리기?
+            await EventBroker.publish(Message(
+                event="multicast",
+                header={
+                    "origin_event": ErrorEvent.ERROR,
+                    "target_conns": [receiver]
+                },
+                payload=ErrorPayload(msg="moving to given tile is not available")
+            ))
             return
 
         new_position = message.payload.position
