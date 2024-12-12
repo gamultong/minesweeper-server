@@ -34,5 +34,4 @@ class MissingFieldException(Exception):
 
 
 class DumbHumanException(Exception):
-    def __repr__(self):
-        return "worng use"
+    msg: str = "worng use. what have you done"

@@ -1,7 +1,9 @@
-from fastapi import FastAPI, WebSocket, Response
+from fastapi import FastAPI, WebSocket, Response, WebSocketDisconnect
 from conn.manager import ConnectionManager
 from board.event.handler import BoardEventHandler
 from cursor.event.handler import CursorEventHandler
+from message import Message
+from message.payload import ErrorEvent, ErrorPayload
 
 app = FastAPI()
 
@@ -27,14 +29,22 @@ async def session(ws: WebSocket):
 
     while True:
         try:
-            msg = await conn.receive()
-            msg.header = {"sender": conn.id}
-            await ConnectionManager.handle_message(msg)
+            message = await conn.receive()
+            message.header = {"sender": conn.id}
+            await ConnectionManager.handle_message(message)
+        except WebSocketDisconnect as e:
+            break
         except Exception as e:
             msg = e
             if hasattr(e, "msg"):
                 msg = e.msg
-            print(f"WebSocket connection closed: {type(e)} '{msg}'")
+
+            await conn.send(Message(
+                event=ErrorEvent.ERROR,
+                payload=ErrorPayload(msg=msg)
+            ))
+
+            print(f"Unhandled error while handling message: \n{message.__dict__}\n{type(e)}: '{msg}'")
             break
 
     await ConnectionManager.close(conn)
