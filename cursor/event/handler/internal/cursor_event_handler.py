@@ -383,20 +383,32 @@ class CursorEventHandler:
 
         cur_watching = CursorHandler.get_watching(cursor_id=cursor.conn_id)
 
-        size_grown = new_width > cursor.width or new_height > cursor.height
+        old_width, old_height = cursor.width, cursor.height
         cursor.set_size(new_width, new_height)
 
+        size_grown = (new_width > old_width) or (new_height > old_height)
+
         if size_grown:
-            top_left = Point(x=cursor.position.x - cursor.width, y=cursor.position.y + cursor.height)
-            bottom_right = Point(x=cursor.position.x + cursor.width, y=cursor.position.y - cursor.height)
+            pos = cursor.position
 
-            exclude_list = [cursor.conn_id] + cur_watching
-            new_watchings = CursorHandler.exists_range(start=top_left, end=bottom_right, exclude_ids=exclude_list)
+            # 현재 범위
+            old_top_left = Point(x=pos.x - old_width, y=pos.y + old_height)
+            old_bottom_right = Point(x=pos.x + old_width, y=pos.y - old_height)
 
-            for other_cursor in new_watchings:
-                CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+            # 새로운 범위
+            new_top_left = Point(x=pos.x - new_width, y=pos.y + new_height)
+            new_bottom_right = Point(x=pos.x + new_width, y=pos.y - new_height)
+
+            # 현재 범위를 제외한 새로운 범위에서 커서들 가져오기
+            new_watchings = CursorHandler.exists_range(
+                start=new_top_left, end=new_bottom_right,
+                exclude_start=old_top_left, exclude_end=old_bottom_right
+            )
 
             if len(new_watchings) > 0:
+                for other_cursor in new_watchings:
+                    CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+
                 await publish_new_cursors_event(target_cursors=[cursor], cursors=new_watchings)
 
         for id in cur_watching:
