@@ -1,6 +1,8 @@
-import unittest
 from tests.utils import cases
-from board.data import Section, Point, Tile, Tiles, for_each_neighbor
+from board.data import Section, Point, Tile, Tiles
+from board.data.internal.section import for_each_neighbor
+
+import unittest
 
 
 # 테스트를 위해 Section.LENGTH를 4로 설정
@@ -138,7 +140,7 @@ class SectionTestCase(unittest.TestCase):
                 result = 0
 
                 # 숫자가 제대로 기록되어 있는가
-                def count_num(t: int) -> tuple[int | None, bool]:
+                def count_num(t: int, p: Point) -> tuple[int | None, bool]:
                     nonlocal result
                     if t == mine_tile:
                         result += 1
@@ -152,11 +154,155 @@ class SectionTestCase(unittest.TestCase):
                 self.assertEqual(got, result)
 
                 # 숫자가 7을 넘지 않는가
-                def check_number_restriction(t: int) -> tuple[int | None, bool]:
+                def check_number_restriction(t: int, p: Point) -> tuple[int | None, bool]:
                     self.assertLessEqual(t & num_mask,  7)
                     return None, False
 
                 for_each_neighbor(sec.data, Point(x, y), func=check_number_restriction)
+
+
+class SectionApplyNeighborTestCase(unittest.TestCase):
+    def setUp(self):
+        # 왼쪽 위 섹션: 오른쪽 끝을 감싸는 지뢰들
+        self.left_top_section = Section(Point(-1, 1), data=bytearray([
+            MINES_OF(0), MINES_OF(1), MINES_OF(2), MINES_OF(2),
+            MINES_OF(0), MINES_OF(2), MINE_TILE__, MINE_TILE__,
+            MINES_OF(0), MINES_OF(3), MINE_TILE__, MINES_OF(5),
+            MINES_OF(0), MINES_OF(2), MINE_TILE__, MINE_TILE__
+        ]))
+        # 오른쪽 위 섹션: 왼쪽 아래 끝단 2개 지뢰
+        self.right_top_section = Section(Point(0, 1), data=bytearray([
+            MINES_OF(1), MINES_OF(1), MINES_OF(0), MINES_OF(0),
+            MINE_TILE__, MINES_OF(2), MINES_OF(0), MINES_OF(0),
+            MINE_TILE__, MINES_OF(4), MINES_OF(1), MINES_OF(0),
+            MINE_TILE__, MINE_TILE__, MINES_OF(1), MINES_OF(0)
+        ]))
+        # 왼쪽 아래 섹션: 오른쪽 아래 끝단 2개 지뢰
+        self.left_bottom_section = Section(Point(-1, 0), data=bytearray([
+            MINES_OF(0), MINES_OF(0), MINES_OF(0), MINES_OF(0),
+            MINES_OF(0), MINES_OF(0), MINES_OF(1), MINES_OF(1),
+            MINES_OF(0), MINES_OF(0), MINES_OF(2), MINE_TILE__,
+            MINES_OF(0), MINES_OF(0), MINES_OF(2), MINE_TILE__
+        ]))
+        # 오른쪽 아래 섹션: 왼쪽 위 끝단을 감싸는 지뢰들
+        self.right_bottom_section = Section(Point(0, 0), data=bytearray([
+            MINES_OF(3), MINE_TILE__, MINES_OF(2), MINES_OF(0),
+            MINE_TILE__, MINE_TILE__, MINES_OF(2), MINES_OF(0),
+            MINES_OF(2), MINES_OF(2), MINES_OF(1), MINES_OF(0),
+            MINES_OF(0), MINES_OF(0), MINES_OF(0), MINES_OF(0)
+        ]))
+
+    def test_apply_neighbor_vertical(self):
+        self.right_bottom_section.apply_neighbor_vertical(
+            neighbor=self.right_top_section
+        )
+        # right_top_section
+        self.assertEqual(self.right_top_section.data[14], MINES_OF(2))  # x=2, y=0
+        # right_bottom_section
+        self.assertEqual(self.right_bottom_section.data[0], MINES_OF(5))  # x=0, y=3
+        self.assertEqual(self.right_bottom_section.data[2], MINES_OF(3))  # x=2, y=3
+
+    def test_apply_neighbor_down(self):
+        self.right_top_section.apply_neighbor_vertical(
+            neighbor=self.right_bottom_section
+        )
+        # right_top_section
+        self.assertEqual(self.right_top_section.data[14], MINES_OF(2))  # x=2, y=0
+        # right_bottom_section
+        self.assertEqual(self.right_bottom_section.data[0], MINES_OF(5))  # x=0, y=3
+        self.assertEqual(self.right_bottom_section.data[2], MINES_OF(3))  # x=2, y=3
+
+    def test_apply_neighbor_right(self):
+        self.left_bottom_section.apply_neighbor_horizontal(
+            neighbor=self.right_bottom_section
+        )
+        # left_bottom_section
+        self.assertEqual(self.left_bottom_section.data[3], MINES_OF(1))  # x=3, y=3
+        self.assertEqual(self.left_bottom_section.data[7], MINES_OF(2))  # x=3, y=2
+        # below_section
+        self.assertEqual(self.right_bottom_section.data[8], MINES_OF(4))  # x=0, y=1
+        self.assertEqual(self.right_bottom_section.data[12], MINES_OF(2))  # x=0, y=0
+
+    def test_apply_neighbor_left(self):
+        self.right_bottom_section.apply_neighbor_horizontal(
+            neighbor=self.left_bottom_section
+        )
+        # left_bottom_section
+        self.assertEqual(self.left_bottom_section.data[3], MINES_OF(1))  # x=3, y=3
+        self.assertEqual(self.left_bottom_section.data[7], MINES_OF(2))  # x=3, y=2
+        # below_section
+        self.assertEqual(self.right_bottom_section.data[8], MINES_OF(4))  # x=0, y=1
+        self.assertEqual(self.right_bottom_section.data[12], MINES_OF(2))  # x=0, y=0
+
+    def test_apply_neighbor_diagnoal_left_top_right_bottom(self):
+        self.left_top_section.apply_neighbor_diagonal(
+            neighbor=self.right_bottom_section
+        )
+        # right_bottom_section
+        self.assertEqual(self.right_bottom_section.data[0], MINES_OF(4))  # x=0, y=3
+
+    def test_apply_neighbor_diagnoal_right_bottom_left_top(self):
+        self.right_bottom_section.apply_neighbor_diagonal(
+            neighbor=self.left_top_section
+        )
+        # right_bottom_section
+        self.assertEqual(self.right_bottom_section.data[0], MINES_OF(4))  # x=0, y=3
+
+    def test_apply_neighbor_diagnoal_left_bottom_right_top(self):
+        self.left_bottom_section.apply_neighbor_diagonal(
+            neighbor=self.right_top_section
+        )
+        # left_bottom_section
+        self.assertEqual(self.left_bottom_section.data[3], MINES_OF(1))  # x=3, y=3
+
+    def test_apply_neighbor_diagnoal_right_top_left_bottom(self):
+        self.right_top_section.apply_neighbor_diagonal(
+            neighbor=self.left_bottom_section
+        )
+        # left_bottom_section
+        self.assertEqual(self.left_bottom_section.data[3], MINES_OF(1))  # x=3, y=3
+
+    def test_apply_neighbor_num_overflow_left_right(self):
+        self.left_top_section.apply_neighbor_horizontal(
+            neighbor=self.right_top_section
+        )
+
+        # left_top_section
+        self.assertEqual(self.left_top_section.data[11], MINES_OF(7))  # x=3, y=1
+
+        # right_top_section
+        l = [
+            self.right_top_section.data[4],  # x=0, y=2
+            self.right_top_section.data[8],  # x=0, y=1
+            self.right_top_section.data[12],  # x=0, y=0
+        ]
+        self.assertEqual(l.count(MINE_TILE__), 2)
+
+    def test_apply_neighbor_num_overflow_right_left(self):
+        self.right_top_section.apply_neighbor_horizontal(
+            neighbor=self.left_top_section
+        )
+
+        # left_top_section
+        self.assertEqual(self.left_top_section.data[11], MINES_OF(7))  # x=3, y=1
+        l = [
+            self.left_top_section.data[6],  # x=2, y=2
+            self.left_top_section.data[7],  # x=3, y=2
+            self.left_top_section.data[10],  # x=2, y=1
+            self.left_top_section.data[14],  # x=2, y=0
+            self.left_top_section.data[15],  # x=3, y=0
+
+        ]
+        self.assertEqual(l.count(MINE_TILE__), 4)
+
+
+MINE_TILE__ = 0b01000000
+
+
+def MINES_OF(n: int) -> int:
+    if n > 7:
+        raise "invalid mine count"
+    return n
 
 
 if __name__ == "__main__":
