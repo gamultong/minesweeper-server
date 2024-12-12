@@ -396,7 +396,8 @@ class CursorEventHandler:
             for other_cursor in new_watchings:
                 CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
 
-            await publish_new_cursors_event(target_cursors=[cursor], cursors=new_watchings)
+            if len(new_watchings) > 0:
+                await publish_new_cursors_event(target_cursors=[cursor], cursors=new_watchings)
 
         for id in cur_watching:
             other_cursor = CursorHandler.get_cursor(id)
