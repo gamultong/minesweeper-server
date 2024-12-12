@@ -78,20 +78,49 @@ class CursorHandlerTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(CursorHandler.cursor_dict), 2)
 
     def test_exists_range(self):
-        result = CursorHandler.exists_range(Point(-3, 3), Point(3, -3))
-        result.sort(key=lambda c: c.conn_id)
+        result = CursorHandler.exists_range(start=Point(-3, 3), end=Point(3, -3))
+
+        result = [c.conn_id for c in result]
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].conn_id, "A")
-        self.assertEqual(result[1].conn_id, "C")
+        self.assertIn("A", result)
+        self.assertIn("C", result)
+
+    def test_exists_range_exclude_id(self):
+        result = CursorHandler.exists_range(start=Point(-3, 3), end=Point(3, -3), exclude_ids=["A"])
+
+        result = [c.conn_id for c in result]
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("C", result)
+
+    def test_exists_range_exclude_range(self):
+        result = CursorHandler.exists_range(
+            start=Point(-3, 3), end=Point(3, -3),
+            exclude_start=Point(-4, 3), exclude_end=Point(0, 1)
+        )
+
+        result = [c.conn_id for c in result]
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("C", result)
 
     def test_view_includes(self):
-        result = CursorHandler.view_includes(Point(-3, 0))
-        result.sort(key=lambda c: c.conn_id)
+        result = CursorHandler.view_includes(p=Point(-3, 0))
+
+        result = [c.conn_id for c in result]
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].conn_id, "A")
-        self.assertEqual(result[1].conn_id, "B")
+        self.assertIn("A", result)
+        self.assertIn("B", result)
+
+    def test_view_includes_exclude_id(self):
+        result = CursorHandler.view_includes(p=Point(-3, 0), exclude_ids=["A"])
+
+        result = [c.conn_id for c in result]
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("B", result)
 
     def test_add_watcher(self):
         CursorHandler.add_watcher(

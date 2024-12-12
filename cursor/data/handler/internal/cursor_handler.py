@@ -34,41 +34,49 @@ class CursorHandler:
 
     # range 안에 커서가 있는가
     @staticmethod
-    def exists_range(start: Point, end: Point, *exclude_ids) -> list[Cursor]:
+    def exists_range(
+        start: Point, end: Point, exclude_ids: list[str] = [],
+        exclude_start: Point | None = None, exclude_end: Point | None = None
+    ) -> list[Cursor]:
         result = []
-        for key in CursorHandler.cursor_dict:
-            if exclude_ids and key in exclude_ids:
+        for cursor_id in CursorHandler.cursor_dict:
+            if cursor_id in exclude_ids:
                 continue
-            cur = CursorHandler.cursor_dict[key]
-            if start.x > cur.position.x:
+
+            cursor = CursorHandler.cursor_dict[cursor_id]
+            pos = cursor.position
+            # start & end 범위를 벗어나는가
+            if \
+                    start.x > pos.x or end.x < pos.x or \
+                    end.y > pos.y or start.y < pos.y:
                 continue
-            if end.x < cur.position.x:
-                continue
-            if start.y < cur.position.y:
-                continue
-            if end.y > cur.position.y:
-                continue
-            result.append(cur)
+
+            # exclude_range 범위에 들어가는가
+            if exclude_start is not None and exclude_end is not None:
+                if \
+                        pos.x >= exclude_start.x and pos.x <= exclude_end.x and \
+                        pos.y >= exclude_end.y and pos.y <= exclude_start.y:
+                    continue
+
+            result.append(cursor)
 
         return result
 
     # 커서 view에 tile이 포함되는가
     @staticmethod
-    def view_includes(p: Point, *exclude_ids) -> list[Cursor]:
+    def view_includes(p: Point, exclude_ids: list[str] = []) -> list[Cursor]:
         result = []
-        for key in CursorHandler.cursor_dict:
-            if exclude_ids and key in exclude_ids:
+        for cursor_id in CursorHandler.cursor_dict:
+            if cursor_id in exclude_ids:
                 continue
-            cur = CursorHandler.cursor_dict[key]
-            if (cur.position.x - cur.width) > p.x:
+
+            cursor = CursorHandler.cursor_dict[cursor_id]
+
+            # 커서 뷰 범위를 벗어나는가
+            if not cursor.check_in_view(p):
                 continue
-            if (cur.position.x + cur.width) < p.x:
-                continue
-            if (cur.position.y - cur.height) > p.y:
-                continue
-            if (cur.position.y + cur.height) < p.y:
-                continue
-            result.append(cur)
+
+            result.append(cursor)
 
         return result
 
