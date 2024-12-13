@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, Response, WebSocketDisconnect
+from websockets.exceptions import ConnectionClosed
 from conn.manager import ConnectionManager
 from board.event.handler import BoardEventHandler
 from cursor.event.handler import CursorEventHandler
@@ -32,7 +33,8 @@ async def session(ws: WebSocket):
             message = await conn.receive()
             message.header = {"sender": conn.id}
             await ConnectionManager.handle_message(message)
-        except WebSocketDisconnect as e:
+        except (WebSocketDisconnect, ConnectionClosed) as e:
+            # 연결 종료됨
             break
         except Exception as e:
             msg = e
