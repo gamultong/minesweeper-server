@@ -61,7 +61,7 @@ class CursorEventHandler:
             y=cursor.position.y - cursor.height
         )
 
-        cursors_in_range = CursorHandler.exists_range(start_p, end_p, cursor.conn_id)
+        cursors_in_range = CursorHandler.exists_range(start=start_p, end=end_p, exclude_ids=[cursor.conn_id])
         if len(cursors_in_range) > 0:
             # 내가 보고있는 커서들
             for other_cursor in cursors_in_range:
@@ -72,7 +72,7 @@ class CursorEventHandler:
                 cursors=cursors_in_range
             )
 
-        cursors_with_view_including = CursorHandler.view_includes(cursor.position, cursor.conn_id)
+        cursors_with_view_including = CursorHandler.view_includes(p=cursor.position, exclude_ids=[cursor.conn_id])
         if len(cursors_with_view_including) > 0:
             # 나를 보고있는 커서들
             for other_cursor in cursors_with_view_including:
@@ -224,7 +224,7 @@ class CursorEventHandler:
         # 새로운 뷰의 커서들 찾기
         top_left = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
         bottom_right = Point(cursor.position.x + cursor.width, cursor.position.y - cursor.height)
-        cursors_in_view = CursorHandler.exists_range(top_left, bottom_right, cursor.conn_id)
+        cursors_in_view = CursorHandler.exists_range(start=top_left, end=bottom_right, exclude_ids=[cursor.conn_id])
 
         original_watching_ids = CursorHandler.get_watching(cursor_id=cursor.conn_id)
         original_watchings = [CursorHandler.get_cursor(id) for id in original_watching_ids]
@@ -249,7 +249,7 @@ class CursorEventHandler:
             )
 
         # 새로운 위치를 바라보고 있는 커서들 찾기, 본인 제외
-        watchers_new_pos = CursorHandler.view_includes(new_position, cursor.conn_id)
+        watchers_new_pos = CursorHandler.view_includes(p=new_position, exclude_ids=[cursor.conn_id])
 
         original_watcher_ids = CursorHandler.get_watchers(cursor_id=cursor.conn_id)
         original_watchers = [CursorHandler.get_cursor(id) for id in original_watcher_ids]
@@ -300,7 +300,7 @@ class CursorEventHandler:
             pub_tile = tile.copy(hide_info=True)
 
         # 변경된 타일을 보고있는 커서들에게 전달
-        view_cursors = CursorHandler.view_includes(position)
+        view_cursors = CursorHandler.view_includes(p=position)
         if len(view_cursors) > 0:
             pub_message = Message(
                 event="multicast",
@@ -320,7 +320,7 @@ class CursorEventHandler:
         start_p = Point(position.x - 1, position.y + 1)
         end_p = Point(position.x + 1, position.y - 1)
 
-        nearby_cursors = CursorHandler.exists_range(start_p, end_p)
+        nearby_cursors = CursorHandler.exists_range(start=start_p, end=end_p)
         if len(nearby_cursors) > 0:
             revive_at = datetime.now() + timedelta(minutes=3)
 
@@ -383,20 +383,32 @@ class CursorEventHandler:
 
         cur_watching = CursorHandler.get_watching(cursor_id=cursor.conn_id)
 
-        size_grown = new_width > cursor.width or new_height > cursor.height
+        old_width, old_height = cursor.width, cursor.height
         cursor.set_size(new_width, new_height)
 
+        size_grown = (new_width > old_width) or (new_height > old_height)
+
         if size_grown:
-            top_left = Point(x=cursor.position.x - cursor.width, y=cursor.position.y + cursor.height)
-            bottom_right = Point(x=cursor.position.x + cursor.width, y=cursor.position.y - cursor.height)
+            pos = cursor.position
 
-            exclude_list = [cursor.conn_id] + cur_watching
-            new_watchings = CursorHandler.exists_range(top_left, bottom_right, *exclude_list)
+            # 현재 범위
+            old_top_left = Point(x=pos.x - old_width, y=pos.y + old_height)
+            old_bottom_right = Point(x=pos.x + old_width, y=pos.y - old_height)
 
-            for other_cursor in new_watchings:
-                CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+            # 새로운 범위
+            new_top_left = Point(x=pos.x - new_width, y=pos.y + new_height)
+            new_bottom_right = Point(x=pos.x + new_width, y=pos.y - new_height)
+
+            # 현재 범위를 제외한 새로운 범위에서 커서들 가져오기
+            new_watchings = CursorHandler.exists_range(
+                start=new_top_left, end=new_bottom_right,
+                exclude_start=old_top_left, exclude_end=old_bottom_right
+            )
 
             if len(new_watchings) > 0:
+                for other_cursor in new_watchings:
+                    CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
+
                 await publish_new_cursors_event(target_cursors=[cursor], cursors=new_watchings)
 
         for id in cur_watching:
