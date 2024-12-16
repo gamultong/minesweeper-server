@@ -266,7 +266,7 @@ def affect_new_mines_to_origin(
                 new_tiles[new_tiles_idx] = cnt
                 continue
 
-            origin_tiles[idx] = num + 1
+            origin_tiles[idx] = tile + 1
 
 
 def decrease_number_around_and_count_mines(tiles: bytearray, p: Point) -> int:
