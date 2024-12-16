@@ -1,3 +1,4 @@
+import asyncio
 from event import EventBroker
 from board.data import Point, Tile
 from board.data.handler import BoardHandler
@@ -80,6 +81,8 @@ class BoardEventHandler():
                 pointable = True
                 break
 
+        publish_coroutines = []
+
         pub_message = Message(
             event=PointEvent.POINTING_RESULT,
             header={"receiver": sender},
@@ -89,11 +92,12 @@ class BoardEventHandler():
             )
         )
 
-        await EventBroker.publish(pub_message)
+        publish_coroutines.append(EventBroker.publish(pub_message))
 
         cursor_pos = message.payload.cursor_position
 
         if not pointable:
+            await asyncio.gather(*publish_coroutines)
             return
 
         # 인터랙션 범위 체크
@@ -102,6 +106,7 @@ class BoardEventHandler():
                 pointer.x > cursor_pos.x + 1 or \
                 pointer.y < cursor_pos.y - 1 or \
                 pointer.y > cursor_pos.y + 1:
+            await asyncio.gather(*publish_coroutines)
             return
 
         # 보드 상태 업데이트하기
@@ -109,12 +114,14 @@ class BoardEventHandler():
         click_type = message.payload.click_type
 
         if tile.is_open:
+            await asyncio.gather(*publish_coroutines)
             return
 
         match (click_type):
             # 닫힌 타일 열기
             case ClickType.GENERAL_CLICK:
                 if tile.is_flag:
+                    await asyncio.gather(*publish_coroutines)
                     return
 
                 tile.is_open = True
@@ -136,7 +143,9 @@ class BoardEventHandler():
             )
         )
 
-        await EventBroker.publish(pub_message)
+        publish_coroutines.append(EventBroker.publish(pub_message))
+
+        await asyncio.gather(*publish_coroutines)
 
     @EventBroker.add_receiver(MoveEvent.CHECK_MOVABLE)
     @staticmethod
