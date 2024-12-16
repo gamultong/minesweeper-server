@@ -1,3 +1,4 @@
+import asyncio
 from cursor.data import Cursor, Color
 from cursor.data.handler import CursorHandler
 from cursor.event.handler import CursorEventHandler
@@ -144,6 +145,34 @@ class CursorEventHandler_NewConnReceiver_TestCase(unittest.IsolatedAsyncioTestCa
         self.assertEqual(got.payload.position.x, 0)
         self.assertEqual(got.payload.position.y, 0)
         self.assertIn(got.payload.color, Color)
+
+    @patch("event.EventBroker.publish")
+    async def test_new_conn_receive_without_cursors_race(self, mock: AsyncMock):
+        conn_1 = "1"
+        conn_2 = "2"
+        height = 1
+        width = 1
+
+        new_conn_1_msg = Message(
+            event=NewConnEvent.NEW_CONN,
+            payload=NewConnPayload(conn_id=conn_1, width=width, height=height)
+        )
+        new_conn_2_msg = Message(
+            event=NewConnEvent.NEW_CONN,
+            payload=NewConnPayload(conn_id=conn_2, width=width, height=height)
+        )
+
+        # 코루틴 스위칭을 위해 sleep. 이게 되는 이유를 모르겠다.
+        async def sleep(_):
+            await asyncio.sleep(0)
+        mock.side_effect = sleep
+
+        await asyncio.gather(
+            CursorEventHandler.receive_new_conn(new_conn_1_msg),
+            CursorEventHandler.receive_new_conn(new_conn_2_msg)
+        )
+        # 첫번째 conn: my-cursor, 두번째 conn: my-cursor, cursors * 2
+        self.assertEqual(len(mock.mock_calls), 4)
 
     @patch("event.EventBroker.publish")
     async def test_receive_new_conn_with_cursors(self, mock: AsyncMock):
@@ -767,7 +796,7 @@ class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCas
         self.assertEqual(len(mock.mock_calls), 2)
 
         # cursors
-        got = mock.mock_calls[0].args[0]
+        got = mock.mock_calls[1].args[0]
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, "multicast")
         # origin_event
@@ -788,7 +817,7 @@ class CursorEventHandler_MovingReceiver_TestCase(unittest.IsolatedAsyncioTestCas
         self.assertEqual(got.payload.cursors[1].color, self.cur_b.color)
 
         # moved
-        got = mock.mock_calls[1].args[0]
+        got = mock.mock_calls[0].args[0]
         self.assertEqual(type(got), Message)
         self.assertEqual(got.event, "multicast")
         # origin_event

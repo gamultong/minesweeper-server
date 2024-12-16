@@ -1,3 +1,4 @@
+import asyncio
 from cursor.data import Cursor
 from cursor.data.handler import CursorHandler
 from board.data import Point, Tile
@@ -39,6 +40,8 @@ class CursorEventHandler:
         cursor = CursorHandler.create_cursor(message.payload.conn_id)
         cursor.set_size(message.payload.width, message.payload.height)
 
+        publish_coroutines = []
+
         new_cursor_message = Message(
             event="multicast",
             header={"target_conns": [cursor.conn_id],
@@ -50,7 +53,7 @@ class CursorEventHandler:
             )
         )
 
-        await EventBroker.publish(new_cursor_message)
+        publish_coroutines.append(EventBroker.publish(new_cursor_message))
 
         start_p = Point(
             x=cursor.position.x - cursor.width,
@@ -67,9 +70,11 @@ class CursorEventHandler:
             for other_cursor in cursors_in_range:
                 CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
 
-            await publish_new_cursors_event(
-                target_cursors=[cursor],
-                cursors=cursors_in_range
+            publish_coroutines.append(
+                publish_new_cursors_event(
+                    target_cursors=[cursor],
+                    cursors=cursors_in_range
+                )
             )
 
         cursors_with_view_including = CursorHandler.view_includes(p=cursor.position, exclude_ids=[cursor.conn_id])
@@ -78,10 +83,14 @@ class CursorEventHandler:
             for other_cursor in cursors_with_view_including:
                 CursorHandler.add_watcher(watcher=other_cursor, watching=cursor)
 
-            await publish_new_cursors_event(
-                target_cursors=cursors_with_view_including,
-                cursors=[cursor]
+            publish_coroutines.append(
+                publish_new_cursors_event(
+                    target_cursors=cursors_with_view_including,
+                    cursors=[cursor]
+                )
             )
+
+        await asyncio.gather(*publish_coroutines)
 
     @EventBroker.add_receiver(PointEvent.POINTING)
     @staticmethod
@@ -219,7 +228,6 @@ class CursorEventHandler:
         cursor.position = new_position
 
         # TODO: 새로운 방식으로 커서들 찾기. 최적화하기.
-        # set을 사용하면 제약이 있음.
 
         # 새로운 뷰의 커서들 찾기
         top_left = Point(cursor.position.x - cursor.width, cursor.position.y + cursor.height)
@@ -236,6 +244,8 @@ class CursorEventHandler:
                 if not in_view:
                     CursorHandler.remove_watcher(watcher=cursor, watching=other_cursor)
 
+        publish_coroutines = []
+
         new_watchings = list(filter(lambda c: c.conn_id not in original_watching_ids, cursors_in_view))
         if len(new_watchings) > 0:
             # 새로운 watching 커서들 연관관계 설정
@@ -243,9 +253,11 @@ class CursorEventHandler:
                 CursorHandler.add_watcher(watcher=cursor, watching=other_cursor)
 
             # 새로운 커서들 전달
-            await publish_new_cursors_event(
-                target_cursors=[cursor],
-                cursors=new_watchings
+            publish_coroutines.append(
+                publish_new_cursors_event(
+                    target_cursors=[cursor],
+                    cursors=new_watchings
+                )
             )
 
         # 새로운 위치를 바라보고 있는 커서들 찾기, 본인 제외
@@ -268,7 +280,8 @@ class CursorEventHandler:
                     color=cursor.color,
                 )
             )
-            await EventBroker.publish(message)
+
+            publish_coroutines.append(EventBroker.publish(message))
 
             # 범위 벗어나면 watcher 제거
             for watcher in original_watchers:
@@ -283,10 +296,14 @@ class CursorEventHandler:
                 CursorHandler.add_watcher(watcher=other_cursor, watching=cursor)
 
             # 새로운 커서들에게 본인 커서 전달
-            await publish_new_cursors_event(
-                target_cursors=new_watchers,
-                cursors=[cursor]
+            publish_coroutines.append(
+                publish_new_cursors_event(
+                    target_cursors=new_watchers,
+                    cursors=[cursor]
+                )
             )
+
+        await asyncio.gather(*publish_coroutines)
 
     @EventBroker.add_receiver(InteractionEvent.TILE_STATE_CHANGED)
     @staticmethod
@@ -298,6 +315,8 @@ class CursorEventHandler:
         if not tile.is_open:
             # 닫힌 타일의 mine, number 정보는 버리기
             pub_tile = tile.copy(hide_info=True)
+
+        publish_coroutines = []
 
         # 변경된 타일을 보고있는 커서들에게 전달
         view_cursors = CursorHandler.view_includes(p=position)
@@ -311,9 +330,10 @@ class CursorEventHandler:
                     tile=pub_tile
                 )
             )
-            await EventBroker.publish(pub_message)
+            publish_coroutines.append(EventBroker.publish(pub_message))
 
         if not (tile.is_open and tile.is_mine):
+            await asyncio.gather(*publish_coroutines)
             return
 
         # 주변 8칸 커서들 죽이기
@@ -335,7 +355,9 @@ class CursorEventHandler:
                     revive_at=revive_at.astimezone().isoformat()
                 )
             )
-            await EventBroker.publish(pub_message)
+            publish_coroutines.append(EventBroker.publish(pub_message))
+
+        await asyncio.gather(*publish_coroutines)
 
     @EventBroker.add_receiver(NewConnEvent.CONN_CLOSED)
     @staticmethod

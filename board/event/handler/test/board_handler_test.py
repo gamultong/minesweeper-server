@@ -1,3 +1,4 @@
+import asyncio
 from cursor.data import Color
 from board.data import Point, Tile, Tiles
 from board.event.handler import BoardEventHandler
@@ -254,6 +255,35 @@ class BoardEventHandler_PointingReceiver_TestCase(unittest.IsolatedAsyncioTestCa
 
         self.assertEqual(fetched_tile, expected_tile)
         self.assertEqual(got.payload.tile, expected_tile)
+
+    @patch("event.EventBroker.publish")
+    async def test_try_pointing_pointable_closed_general_click_race(self, mock: AsyncMock):
+        cursor_pos = Point(0, 0)
+        pointer = Point(1, 0)
+
+        # 코루틴 스위칭을 위해 sleep. 이게 되는 이유를 모르겠다.
+        async def sleep(_):
+            await asyncio.sleep(0)
+        mock.side_effect = sleep
+
+        message = Message(
+            event=PointEvent.TRY_POINTING,
+            header={"sender": self.sender_id},
+            payload=TryPointingPayload(
+                cursor_position=cursor_pos,
+                new_pointer=pointer,
+                click_type=ClickType.GENERAL_CLICK,
+                color=Color.BLUE
+            )
+        )
+
+        await asyncio.gather(
+            BoardEventHandler.receive_try_pointing(message),
+            BoardEventHandler.receive_try_pointing(message)
+        )
+
+        # 첫번째: pointing-result, tile-state-changed 두번째: pointing-result 발행하는지 확인
+        self.assertEqual(len(mock.mock_calls), 3)
 
     @patch("event.EventBroker.publish")
     async def test_try_pointing_pointable_closed_general_click_flag(self, mock: AsyncMock):
