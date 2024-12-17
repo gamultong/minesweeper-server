@@ -1,3 +1,4 @@
+import asyncio
 from fastapi.websockets import WebSocket
 from conn import Conn
 from message import Message
@@ -65,9 +66,14 @@ class ConnectionManager:
     @staticmethod
     async def receive_broadcast_event(message: Message):
         overwrite_event(message)
+
+        coroutines = []
+
         for id in ConnectionManager.conns:
             conn = ConnectionManager.conns[id]
-            await conn.send(message)
+            coroutines.append(conn.send(message))
+
+        await asyncio.gather(*coroutines)
 
     @EventBroker.add_receiver("multicast")
     @staticmethod
@@ -75,12 +81,17 @@ class ConnectionManager:
         overwrite_event(message)
         if "target_conns" not in message.header:
             raise DumbHumanException()
+
+        coroutines = []
+
         for conn_id in message.header["target_conns"]:
             conn = ConnectionManager.get_conn(conn_id)
             if not conn:
                 raise DumbHumanException()
 
-            await conn.send(message)
+            coroutines.append(conn.send(message))
+
+        await asyncio.gather(*coroutines)
 
     @staticmethod
     async def handle_message(message: Message):

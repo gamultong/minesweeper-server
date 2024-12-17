@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 from typing import Callable, Generic
 from message import Message
 from .exceptions import NoMatchingReceiverException
@@ -78,10 +79,14 @@ class EventBroker:
         if message.event not in EventBroker.event_dict:
             raise NoMatchingReceiverException(message.event)
 
+        coroutines = []
+
         receiver_ids = EventBroker.event_dict[message.event]
         for id in receiver_ids:
             receiver = Receiver.get_receiver(id)
-            await receiver(message)
+            coroutines.append(receiver(message))
+
+        await asyncio.gather(*coroutines)
 
     def _debug(message: Message):
         print(message.to_str(del_header=False))
