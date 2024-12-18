@@ -170,11 +170,6 @@ class BoardEventHandler_FetchTilesReceiver_TestCase(unittest.IsolatedAsyncioTest
         expected = BoardHandler.fetch(got.payload.start_p, got.payload.end_p)
         expected.hide_info()
 
-        # TODO: flaky 테스트.
-        # fetch 범위가 setup_board로 만들어진 범위를 넘어가고 경계에 위치한 타일이 열린 타일이면 문제가 발생.
-        # fetch는 좌상에서 우하로 섹션을 탐색함. 때문에 넘어간 범위가 오른쪽이거나 아래이면
-        # 이미 탐색하여 저장해놓은 중간값에는 그 섹션이 적용되지 않기 때문에 문제가 발생함.
-        # 그런데 코드를 알맞게 사용하면 끝 섹션의 경계가 열린 타일일 수가 없음.
         self.assertEqual(got.payload.tiles, expected.to_str())
 
 

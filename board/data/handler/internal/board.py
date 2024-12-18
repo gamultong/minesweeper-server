@@ -31,33 +31,40 @@ class BoardHandler:
         out_width, out_height = (end.x - start.x + 1), (start.y - end.y + 1)
         out = bytearray(out_width * out_height)
 
+        # TODO: 새로운 섹션과의 관계로 경계값이 바뀔 수 있음.
+        # 이를 fetch 결과에 적용시킬 수 있도록 미리 다 만들어놓고 fetch를 시작해야 함.
+        # 현재는 섹션이 메모리 내부 레퍼런스로 저장되기 때문에 이렇게 미리 받아놓고 할 수 있음.
+        # 나중에는 다시 섹션을 가져와야 함.
+        sections = []
         for sec_y in range(start.y // Section.LENGTH, end.y // Section.LENGTH - 1, - 1):
             for sec_x in range(start.x // Section.LENGTH, end.x // Section.LENGTH + 1):
                 section = BoardHandler._get_or_create_section(sec_x, sec_y)
+                sections.append(section)
 
-                inner_start = Point(
-                    x=max(start.x, section.abs_x) - (section.abs_x),
-                    y=min(start.y, section.abs_y + Section.LENGTH-1) - section.abs_y
-                )
-                inner_end = Point(
-                    x=min(end.x, section.abs_x + Section.LENGTH-1) - section.abs_x,
-                    y=max(end.y, section.abs_y) - section.abs_y
-                )
+        for section in sections:
+            inner_start = Point(
+                x=max(start.x, section.abs_x) - (section.abs_x),
+                y=min(start.y, section.abs_y + Section.LENGTH-1) - section.abs_y
+            )
+            inner_end = Point(
+                x=min(end.x, section.abs_x + Section.LENGTH-1) - section.abs_x,
+                y=max(end.y, section.abs_y) - section.abs_y
+            )
 
-                fetched = section.fetch(start=inner_start, end=inner_end)
+            fetched = section.fetch(start=inner_start, end=inner_end)
 
-                x_gap, y_gap = (inner_end.x - inner_start.x + 1), (inner_start.y - inner_end.y + 1)
+            x_gap, y_gap = (inner_end.x - inner_start.x + 1), (inner_start.y - inner_end.y + 1)
 
-                # start로부터 떨어진 거리
-                out_x = (section.abs_x + inner_start.x) - start.x
-                out_y = start.y - (section.abs_y + inner_start.y)
+            # start로부터 떨어진 거리
+            out_x = (section.abs_x + inner_start.x) - start.x
+            out_y = start.y - (section.abs_y + inner_start.y)
 
-                for row_num in range(y_gap):
-                    out_idx = (out_width * (out_y + row_num)) + out_x
-                    data_idx = row_num * x_gap
+            for row_num in range(y_gap):
+                out_idx = (out_width * (out_y + row_num)) + out_x
+                data_idx = row_num * x_gap
 
-                    data = fetched.data[data_idx:data_idx+x_gap]
-                    out[out_idx:out_idx+x_gap] = data
+                data = fetched.data[data_idx:data_idx+x_gap]
+                out[out_idx:out_idx+x_gap] = data
 
         return Tiles(data=out)
 
