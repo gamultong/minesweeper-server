@@ -1,3 +1,4 @@
+import random
 from board.data import Point, Section, Tile, Tiles
 
 
@@ -17,6 +18,12 @@ def init_first_section() -> dict[int, dict[int, Section]]:
 class BoardHandler:
     # sections[y][x]
     sections: dict[int, dict[int, Section]] = init_first_section()
+
+    # 맵의 각 끝단 섹션 위치
+    max_x: int = 0
+    min_x: int = 0
+    max_y: int = 0
+    min_y: int = 0
 
     @staticmethod
     def fetch(start: Point, end: Point) -> Tiles:
@@ -72,11 +79,56 @@ class BoardHandler:
         BoardHandler.sections[sec_p.y][sec_p.x] = section
 
     @staticmethod
+    def get_random_open_position() -> Point:
+        """
+        전체 맵에서 랜덤한 열린 타일 위치를 하나 찾는다.
+        섹션이 하나 이상 존재해야한다.
+        """
+        # 이미 방문한 섹션들
+        visited = set()
+
+        sec_x_range = (BoardHandler.min_x, BoardHandler.max_x)
+        sec_y_range = (BoardHandler.min_y, BoardHandler.max_y)
+
+        while True:
+            rand_p = Point(
+                x=random.randint(sec_x_range[0], sec_x_range[1]),
+                y=random.randint(sec_y_range[0], sec_y_range[1])
+            )
+
+            if (rand_p.x, rand_p.y) in visited:
+                continue
+
+            visited.add((rand_p.x, rand_p.y))
+
+            chosen_section = BoardHandler._get_section_or_none(rand_p.x, rand_p.y)
+            if chosen_section is None:
+                continue
+
+            # 섹션 내부의 랜덤한 열린 타일 위치를 찾는다.
+            inner_point = randomly_find_open_tile(chosen_section)
+            if inner_point is None:
+                continue
+
+            open_point = Point(
+                x=chosen_section.abs_x + inner_point.x,
+                y=chosen_section.abs_y + inner_point.y
+            )
+
+            return open_point
+
+    @staticmethod
     def _get_or_create_section(x: int, y: int) -> Section:
         if y not in BoardHandler.sections:
+            BoardHandler.max_y = max(BoardHandler.max_y, y)
+            BoardHandler.min_y = min(BoardHandler.min_y, y)
+
             BoardHandler.sections[y] = {}
 
         if x not in BoardHandler.sections[y]:
+            BoardHandler.max_x = max(BoardHandler.max_x, x)
+            BoardHandler.min_x = min(BoardHandler.min_x, x)
+
             new_section = Section.create(Point(x, y))
 
             # (x, y)
@@ -110,3 +162,31 @@ class BoardHandler:
     def _get_section_or_none(x: int, y: int) -> Section | None:
         if y in BoardHandler.sections and x in BoardHandler.sections[y]:
             return BoardHandler.sections[y][x]
+
+
+def randomly_find_open_tile(section: Section) -> Point | None:
+    """
+    섹션 안에서 랜덤한 열린 타일 위치를 찾는다.
+    시작 위치, 순회 방향(순방향, 역방향)의 순서를 무작위로 잡아 탐색한다.
+    만약 열린 타일이 존재하지 않는다면 None.
+    """
+
+    # (증감값, 한계값)
+    dirs = [(1, (Section.LENGTH ** 2) - 1), (-1, 0)]  # 순방향, 역방향
+    random.shuffle(dirs)
+
+    start = random.randint(0, (Section.LENGTH ** 2) - 1)
+
+    for num, limit in dirs:
+        for idx in range(start, limit + num, num):
+            data = section.data[idx]
+
+            tile = Tile.from_int(data)
+            if not tile.is_open:
+                continue
+
+            # 열린 타일 찾음.
+            x = idx % Section.LENGTH
+            y = Section.LENGTH - (idx // Section.LENGTH) - 1
+
+            return Point(x, y)
