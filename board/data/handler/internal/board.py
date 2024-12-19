@@ -1,4 +1,5 @@
 from board.data import Point, Section, Tile, Tiles
+from cursor.data import Color
 
 
 def init_first_section() -> dict[int, dict[int, Section]]:
@@ -55,21 +56,137 @@ class BoardHandler:
         return Tiles(data=out)
 
     @staticmethod
-    def update_tile(p: Point, tile: Tile):
-        tiles = Tiles(data=bytearray([tile.data]))
+    def open_tile(p: Point) -> Tile:
+        section, inner_p = BoardHandler._get_section_from_abs_point(p)
 
-        sec_p = Point(x=p.x // Section.LENGTH, y=p.y // Section.LENGTH)
-        section = BoardHandler.sections[sec_p.y][sec_p.x]
+        tiles = section.fetch(inner_p)
 
-        inner_p = Point(
-            x=p.x - section.abs_x,
-            y=p.y - section.abs_y
-        )
+        tile = Tile.from_int(tiles.data[0])
+        tile.is_open = True
+
+        tiles.data[0] = tile.data
 
         section.update(data=tiles, start=inner_p)
+        BoardHandler._save_section(section)
 
-        # 지금은 안 해도 되긴 할텐데 일단 해 놓기
-        BoardHandler.sections[sec_p.y][sec_p.x] = section
+        return tile
+
+    @staticmethod
+    def open_tiles_cascade(p: Point) -> tuple[Point, Point, Tiles]:
+        # 탐색하며 발견한 섹션들
+        sections: list[Section] = []
+
+        def get_section(p: Point) -> tuple[Section, Point]:
+            sec_p = Point(
+                x=p.x // Section.LENGTH,
+                y=p.y // Section.LENGTH
+            )
+            for section in sections:
+                if section.p == sec_p:
+                    inner_p = Point(
+                        x=p.x - section.abs_x,
+                        y=p.y - section.abs_y
+                    )
+                    return section, inner_p
+
+            found_section, inner_p = BoardHandler._get_section_from_abs_point(p)
+            sections.append(found_section)
+
+            return found_section, inner_p
+
+        queue = []
+        queue.append(p)
+
+        # 추후 fetch 범위
+        min_x, min_y = p.x, p.y
+        max_x, max_y = p.x, p.y
+
+        while len(queue) > 0:
+            p = queue.pop(0)
+
+            min_x, min_y = min(min_x, p.x), min(min_y, p.y)
+            max_x, max_y = max(max_x, p.x), max(max_y, p.y)
+
+            sec, inner_p = get_section(p)
+
+            # TODO: section.fetch_one(point) 같은거 만들어야 할 듯
+            tile = Tile.from_int(sec.fetch(inner_p).data[0])
+
+            # 열어주기
+            tile.is_open = True
+            tile.is_flag = False
+            tile.color = None
+
+            sec.update(Tiles(data=bytearray([tile.data])), inner_p)
+
+            if tile.number is not None:
+                continue
+
+            # (x, y) 순서
+            delta = [
+                (0, 1), (0, -1), (-1, 0), (1, 0),  # 상하좌우
+                (-1, 1), (1, 1), (-1, -1), (1, -1),  # 좌상 우상 좌하 우하
+            ]
+
+            for dx, dy in delta:
+                np = Point(x=p.x+dx, y=p.y+dy)
+
+                sec, inner_p = get_section(np)
+                tile = Tile.from_int(sec.fetch(inner_p).data[0])
+                if tile.is_open or tile.is_mine:
+                    # is_mine이 True인 경우:
+                    # cascading open으로 인해 생긴 새로운 섹션의 가장자리가 지뢰일 때.
+                    continue
+
+                queue.append(np)
+
+        # 섹션 변경사항 모두 저장
+        for section in sections:
+            BoardHandler._save_section(section)
+
+        start_p = Point(min_x, max_y)
+        end_p = Point(max_x, min_y)
+        tiles = BoardHandler.fetch(start_p, end_p)
+
+        return start_p, end_p, tiles
+
+    @staticmethod
+    def set_flag_state(p: Point, state: bool, color: Color | None = None) -> Tile:
+        section, inner_p = BoardHandler._get_section_from_abs_point(p)
+
+        tiles = section.fetch(inner_p)
+
+        tile = Tile.from_int(tiles.data[0])
+        tile.is_flag = state
+        tile.color = color
+
+        tiles.data[0] = tile.data
+
+        section.update(data=tiles, start=inner_p)
+        BoardHandler._save_section(section)
+
+        return tile
+
+    def _get_section_from_abs_point(abs_p: Point) -> tuple[Section, Point]:
+        """
+        절대 좌표 abs_p를 포함하는 섹션, 그리고 abs_p의 섹션 내부 좌표를 반환한다.
+        """
+        sec_p = Point(
+            x=abs_p.x // Section.LENGTH,
+            y=abs_p.y // Section.LENGTH
+        )
+
+        section = BoardHandler._get_or_create_section(sec_p.x, sec_p.y)
+
+        inner_p = Point(
+            x=abs_p.x - section.abs_x,
+            y=abs_p.y - section.abs_y
+        )
+
+        return section, inner_p
+
+    def _save_section(section: Section):
+        BoardHandler.sections[section.p.y][section.p.x] = section
 
     @staticmethod
     def _get_or_create_section(x: int, y: int) -> Section:
