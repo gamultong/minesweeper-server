@@ -78,7 +78,7 @@ class CursorEventHandler:
                 )
             )
 
-        cursors_with_view_including = CursorHandler.view_includes(p=cursor.position, exclude_ids=[cursor.conn_id])
+        cursors_with_view_including = CursorHandler.view_includes_point(p=cursor.position, exclude_ids=[cursor.conn_id])
         if len(cursors_with_view_including) > 0:
             # 나를 보고있는 커서들
             for other_cursor in cursors_with_view_including:
@@ -262,7 +262,7 @@ class CursorEventHandler:
             )
 
         # 새로운 위치를 바라보고 있는 커서들 찾기, 본인 제외
-        watchers_new_pos = CursorHandler.view_includes(p=new_position, exclude_ids=[cursor.conn_id])
+        watchers_new_pos = CursorHandler.view_includes_point(p=new_position, exclude_ids=[cursor.conn_id])
 
         original_watcher_ids = CursorHandler.get_watchers(cursor_id=cursor.conn_id)
         original_watchers = [CursorHandler.get_cursor(id) for id in original_watcher_ids]
@@ -318,7 +318,7 @@ class CursorEventHandler:
         publish_coroutines = []
 
         # 변경된 타일을 보고있는 커서들에게 전달
-        view_cursors = CursorHandler.view_includes(p=position)
+        view_cursors = CursorHandler.view_includes_point(p=position)
         if len(view_cursors) > 0:
             pub_message = Message(
                 event="multicast",
@@ -358,13 +358,31 @@ class CursorEventHandler:
 
         await asyncio.gather(*publish_coroutines)
 
+    @staticmethod
+    async def receive_tiles_opened(message: Message[TilesOpenedPayload]):
+        start_p = message.payload.start_p
+        end_p = message.payload.end_p
+
+        # 변경된 타일을 보고있는 커서들에게 전달
+        view_cursors = CursorHandler.view_includes_range(start=start_p, end=end_p)
+        if len(view_cursors) > 0:
+            pub_message = Message(
+                event="multicast",
+                header={
+                    "target_conns": [c.conn_id for c in view_cursors],
+                    "origin_event": message.event
+                },
+                payload=message.payload
+            )
+            await EventBroker.publish(pub_message)
+
     @EventBroker.add_receiver(InteractionEvent.FLAG_SET)
     @staticmethod
     async def receive_flag_set(message: Message[FlagSetPayload]):
         position = message.payload.position
 
         # 변경된 타일을 보고있는 커서들에게 전달
-        view_cursors = CursorHandler.view_includes(p=position)
+        view_cursors = CursorHandler.view_includes_point(p=position)
         if len(view_cursors) > 0:
             pub_message = Message(
                 event="multicast",
