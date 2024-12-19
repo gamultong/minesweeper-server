@@ -35,4 +35,4 @@ class TilesOpenedPayload(Payload):
 class FlagSetPayload(Payload):
     position: ParsablePayload[Point]
     is_set: bool
-    color: Color
+    color: Color | None

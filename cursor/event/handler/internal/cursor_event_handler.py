@@ -358,6 +358,24 @@ class CursorEventHandler:
 
         await asyncio.gather(*publish_coroutines)
 
+    @EventBroker.add_receiver(InteractionEvent.FLAG_SET)
+    @staticmethod
+    async def receive_flag_set(message: Message[FlagSetPayload]):
+        position = message.payload.position
+
+        # 변경된 타일을 보고있는 커서들에게 전달
+        view_cursors = CursorHandler.view_includes(p=position)
+        if len(view_cursors) > 0:
+            pub_message = Message(
+                event="multicast",
+                header={
+                    "target_conns": [c.conn_id for c in view_cursors],
+                    "origin_event": message.event
+                },
+                payload=message.payload
+            )
+            await EventBroker.publish(pub_message)
+
     @EventBroker.add_receiver(NewConnEvent.CONN_CLOSED)
     @staticmethod
     async def receive_conn_closed(message: Message[ConnClosedPayload]):
