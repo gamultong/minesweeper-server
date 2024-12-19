@@ -1,7 +1,7 @@
 import asyncio
 from cursor.data import Cursor
 from cursor.data.handler import CursorHandler
-from board.data import Point, Tile
+from board.data import Point, Tile, Tiles
 from event import EventBroker
 from message import Message
 from datetime import datetime, timedelta
@@ -22,8 +22,9 @@ from message.payload import (
     MovableResultPayload,
     MovedPayload,
     InteractionEvent,
-    TileStateChangedPayload,
-    TileUpdatedPayload,
+    FlagSetPayload,
+    SingleTileOpenedPayload,
+    TilesOpenedPayload,
     YouDiedPayload,
     ConnClosedPayload,
     CursorQuitPayload,
@@ -305,16 +306,14 @@ class CursorEventHandler:
 
         await asyncio.gather(*publish_coroutines)
 
-    @EventBroker.add_receiver(InteractionEvent.TILE_STATE_CHANGED)
+    @EventBroker.add_receiver(InteractionEvent.SINGLE_TILE_OPENED)
     @staticmethod
-    async def receive_tile_state_changed(message: Message[TileStateChangedPayload]):
+    async def receive_single_tile_opened(message: Message[SingleTileOpenedPayload]):
         position = message.payload.position
-        tile = message.payload.tile
+        tile_str = message.payload.tile
 
-        pub_tile = tile
-        if not tile.is_open:
-            # 닫힌 타일의 mine, number 정보는 버리기
-            pub_tile = tile.copy(hide_info=True)
+        tiles = Tiles(data=bytearray.fromhex(tile_str))
+        tile = Tile.from_int(tiles.data[0])
 
         publish_coroutines = []
 
@@ -323,16 +322,15 @@ class CursorEventHandler:
         if len(view_cursors) > 0:
             pub_message = Message(
                 event="multicast",
-                header={"target_conns": [c.conn_id for c in view_cursors],
-                        "origin_event": InteractionEvent.TILE_UPDATED},
-                payload=TileUpdatedPayload(
-                    position=position,
-                    tile=pub_tile
-                )
+                header={
+                    "target_conns": [c.conn_id for c in view_cursors],
+                    "origin_event": message.event
+                },
+                payload=message.payload
             )
             publish_coroutines.append(EventBroker.publish(pub_message))
 
-        if not (tile.is_open and tile.is_mine):
+        if not tile.is_mine:
             await asyncio.gather(*publish_coroutines)
             return
 
@@ -342,6 +340,7 @@ class CursorEventHandler:
 
         nearby_cursors = CursorHandler.exists_range(start=start_p, end=end_p)
         if len(nearby_cursors) > 0:
+            # TODO: 하드코딩 없애기
             revive_at = datetime.now() + timedelta(minutes=3)
 
             for c in nearby_cursors:
@@ -349,11 +348,11 @@ class CursorEventHandler:
 
             pub_message = Message(
                 event="multicast",
-                header={"target_conns": [c.conn_id for c in nearby_cursors],
-                        "origin_event": InteractionEvent.YOU_DIED},
-                payload=YouDiedPayload(
-                    revive_at=revive_at.astimezone().isoformat()
-                )
+                header={
+                    "target_conns": [c.conn_id for c in nearby_cursors],
+                    "origin_event": InteractionEvent.YOU_DIED
+                },
+                payload=YouDiedPayload(revive_at=revive_at.astimezone().isoformat())
             )
             publish_coroutines.append(EventBroker.publish(pub_message))
 
