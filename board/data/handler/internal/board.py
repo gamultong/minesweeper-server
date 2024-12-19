@@ -174,26 +174,46 @@ class BoardHandler:
 def randomly_find_open_tile(section: Section) -> Point | None:
     """
     섹션 안에서 랜덤한 열린 타일 위치를 찾는다.
-    시작 위치, 순회 방향(순방향, 역방향)의 순서를 무작위로 잡아 탐색한다.
+    시작 위치, 순회 방향의 순서를 무작위로 잡아 탐색한다.
     만약 열린 타일이 존재하지 않는다면 None.
     """
 
     # (증감값, 한계값)
-    dirs = [(1, (Section.LENGTH ** 2) - 1), (-1, 0)]  # 순방향, 역방향
-    random.shuffle(dirs)
+    directions = [
+        (1, Section.LENGTH - 1), (-1, 0)  # 순방향, 역방향
+    ]
+    random.shuffle(directions)
 
-    start = random.randint(0, (Section.LENGTH ** 2) - 1)
+    x_start = random.randint(0, Section.LENGTH - 1)
+    y_start = random.randint(0, Section.LENGTH - 1)
 
-    for num, limit in dirs:
-        for idx in range(start, limit + num, num):
-            data = section.data[idx]
+    pointers = [0, 0]  # first, second
+    start_values = [0, 0]
 
-            tile = Tile.from_int(data)
-            if not tile.is_open:
-                continue
+    x_first = random.choice([True, False])
+    x_pointer = 0 if x_first else 1
+    y_pointer = 1 if x_first else 0
 
-            # 열린 타일 찾음.
-            x = idx % Section.LENGTH
-            y = Section.LENGTH - (idx // Section.LENGTH) - 1
+    start_values[x_pointer] = x_start
+    start_values[y_pointer] = y_start
 
-            return Point(x, y)
+    # second 양방향 탐색
+    for num, limit in directions:
+        for second in range(start_values[1], limit + num, num):
+            pointers[1] = second
+
+            # first 양방향 탐색
+            for num, limit in directions:
+                for first in range(start_values[0], limit + num, num):
+                    pointers[0] = first
+
+                    x = pointers[x_pointer]
+                    y = pointers[y_pointer]
+
+                    idx = y * Section.LENGTH + x
+
+                    tile = Tile.from_int(section.data[idx])
+                    if tile.is_open:
+                        # 좌표계에 맞게 y 반전
+                        y = Section.LENGTH - y - 1
+                        return Point(x, y)
