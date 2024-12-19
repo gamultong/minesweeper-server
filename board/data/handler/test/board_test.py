@@ -70,7 +70,7 @@ class BoardHandlerTestCase(unittest.TestCase):
 
         start_p, end_p, tiles = BoardHandler.open_tiles_cascade(p)
 
-        self.assertEqual(len(create_seciton_mock.mock_calls), 5)
+        self.assertEqual(len(create_seciton_mock.mock_calls), 20)
 
         self.assertEqual(start_p, Point(-1, 3))
         self.assertEqual(end_p, Point(3, -1))
