@@ -73,6 +73,11 @@ class BoardHandler:
 
     @staticmethod
     def open_tiles_cascade(p: Point) -> tuple[Point, Point, Tiles]:
+        """
+        지정된 타일부터 주변 타일들을 연쇄적으로 개방한다.
+        빈칸들과 빈칸과 인접한숫자 타일까지 개방하며, 섹션 가장자리 데이터가 새로운 섹션으로 인해 중간에 수정되는 것을 방지하기 위해
+        섹션을 사용할 때 인접 섹션이 존재하지 않으면 미리 만들어 놓는다.
+        """
         # 탐색하며 발견한 섹션들
         sections: list[Section] = []
 
